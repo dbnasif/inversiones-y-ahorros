@@ -1,0 +1,2994 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Inversiones Dani v6</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ─── PALETA PASTEL ─────────────────────────────────────────────────────── */
+:root{
+  --bg:#f2f4f8;--card:#fff;--text:#334155;--muted:#94a3b8;--line:#e2e8f0;
+  --dark:#1e293b;
+  --blue:#5b8dee;--green:#34c77b;--red:#f56565;--amber:#ed8936;
+  --soft:#f8fafc;--nav-bg:#fff;
+
+  /* Flujo – jerarquía pastel */
+  --fl-usd-bg:#dbeafe;   --fl-usd-txt:#1e40af;   /* Nivel 1 USD */
+  --fl-ars-bg:#dcfce7;   --fl-ars-txt:#166534;   /* Nivel 1 ARS */
+  --fl-fuera-bg:#e0f2fe; --fl-fuera-txt:#075985; /* Nivel 2 Fuera */
+  --fl-dentro-bg:#fef9c3;--fl-dentro-txt:#854d0e; /* Nivel 2 Dentro */
+  --fl-row-bg:#fff;                               /* Nivel 3 instrumento */
+  --fl-sub2-bg:#f1f5f9;  --fl-sub2-txt:#475569;  /* Subtotal L2 */
+  --fl-sub1-bg:#cbd5e1;  --fl-sub1-txt:#1e293b;  /* Subtotal L1 */
+  --fl-tc-bg:#eff6ff;    --fl-tc-txt:#1e40af;
+  --fl-total-bg:#1e293b; --fl-total-txt:#fff;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:Inter,Arial,sans-serif;color:var(--text);font-size:12px}
+header{background:var(--dark);color:#fff;padding:10px 20px;display:flex;align-items:center;gap:12px;height:46px}
+header h1{font-size:14px;font-weight:800;flex:1;letter-spacing:.2px}
+header .save-ind{font-size:11px;color:#8897b3}
+.app{display:grid;grid-template-columns:190px 1fr;min-height:calc(100vh - 46px)}
+
+/* NAV */
+nav{background:var(--nav-bg);border-right:1px solid var(--line);padding:8px;position:sticky;top:0;height:calc(100vh - 46px);overflow-y:auto}
+nav .nav-section{font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase;padding:10px 8px 3px;letter-spacing:.8px}
+nav button{width:100%;display:flex;align-items:center;gap:7px;border:0;background:transparent;text-align:left;padding:7px 9px;border-radius:7px;font-weight:600;cursor:pointer;color:#344054;font-size:11.5px;line-height:1.3}
+nav button .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+nav button.active{background:#1e293b;color:white}
+nav button.active .dot{background:white!important}
+nav button:hover:not(.active){background:var(--soft)}
+
+/* LAYOUT */
+main{padding:16px;width:100%}
+.tab{display:none}.tab.active{display:block}
+.card{background:white;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(16,24,40,.04)}
+.grid{display:grid;gap:12px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+
+/* TYPOGRAPHY */
+h2{font-size:13px;font-weight:800;margin-bottom:10px;color:var(--dark)}
+h3{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px}
+
+/* TABLES – columnas centradas por defecto; .num = derecha; .left = izquierda */
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{background:var(--soft);font-weight:700;color:#4a5568;font-size:10.5px;white-space:nowrap;
+   padding:6px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;text-align:center}
+td{padding:5px 8px;border-bottom:1px dashed var(--line);vertical-align:middle;color:var(--text);text-align:center}
+th.left,td.left{text-align:left!important}
+th.num,td.num{text-align:right!important}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#f9fafc}
+.table-wrap{overflow:auto;max-height:480px;border:1px solid var(--line);border-radius:9px}
+
+/* INPUTS */
+input[type=text],input[type=number],input[type=date],input[type=month],select,textarea{
+  border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit;background:white;color:var(--text);outline:none;width:100%
+}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(91,141,238,.12)}
+
+/* BUTTONS */
+.btn{border:0;border-radius:7px;padding:6px 11px;font-weight:700;cursor:pointer;font-size:11.5px;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.82}
+.btn-xs{padding:3px 7px;font-size:10.5px;border-radius:5px}
+.primary{background:#1e293b;color:white}
+.secondary{background:#eaecf0;color:#1e293b}
+.danger{background:#fee4e2;color:#912018}
+.success{background:#d1fae5;color:#065f46}
+.toggle-btn{background:#f1f3f7;border:1px solid var(--line);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted)}
+.toggle-btn.on{background:#1e293b;color:white;border-color:#1e293b}
+
+/* KPIs */
+.kpi .label{font-size:9.5px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:.4px}
+.kpi .value{font-size:20px;font-weight:900;margin-top:5px;line-height:1;color:var(--dark)}
+.kpi .note{font-size:10px;color:var(--muted);margin-top:4px}
+
+/* STATUS */
+.notice{background:#fffbeb;border:1px solid #fcd34d;color:#78350f;border-radius:8px;padding:8px 12px;font-size:11px;margin-bottom:10px}
+.good{color:#16a34a;font-weight:700}
+.bad{color:#dc2626;font-weight:700}
+.warn{color:#d97706;font-weight:700}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;justify-content:center;
+      border-radius:999px;padding:2px 8px;font-size:9.5px;font-weight:600;white-space:nowrap;line-height:1.5}
+.pill.ok{background:#dcfce7;color:#15803d}
+.pill.warnp{background:#fef3c7;color:#92400e}
+.pill.badp{background:#fee2e2;color:#991b1b}
+.pill.infop{background:#dbeafe;color:#1e40af}
+.pill.purp{background:#ede9fe;color:#4c1d95}
+.pill.greyp{background:#f1f5f9;color:#475569}
+.pill.usdp{background:#bfdbfe;color:#1d4ed8}
+.pill.arsp{background:#bbf7d0;color:#14532d}
+
+/* PILL-SELECT: select sin flecha nativa, estilo píldora */
+.pill-sel{
+  appearance:none;-webkit-appearance:none;
+  border:none;border-radius:999px;padding:2px 8px;
+  font-size:9.5px;font-weight:600;cursor:pointer;
+  line-height:1.5;white-space:nowrap;
+  outline:none;width:auto;
+}
+.pill-sel:focus{box-shadow:0 0 0 2px rgba(91,141,238,.2)}
+.pill-sel.usdp{background:#bfdbfe;color:#1d4ed8}
+.pill-sel.arsp{background:#bbf7d0;color:#14532d}
+.pill-sel.greyp{background:#f1f5f9;color:#475569;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+
+/* PROGRESS */
+.progress-bar{background:var(--line);border-radius:999px;height:6px;overflow:hidden;min-width:80px}
+.progress-bar-fill{height:100%;border-radius:999px;background:var(--blue);transition:width .3s}
+.progress-bar-fill.done{background:var(--green)}
+
+/* INLINE EDIT */
+.ie{border:1px solid transparent;background:transparent;border-radius:5px;padding:3px 5px;width:100%;cursor:text;font:inherit;color:var(--text)}
+.ie:hover{border-color:var(--line);background:white}
+.ie:focus{border-color:var(--blue);background:white;outline:none;box-shadow:0 0 0 2px rgba(91,141,238,.1)}
+
+/* CHART */
+.chart-container{position:relative;height:240px}
+.chart-toolbar{display:flex;gap:5px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
+.chart-toolbar span{font-size:10px;color:var(--muted);margin-right:4px}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   FLUJO TABLE – STICKY PRIMERA COLUMNA + JERARQUÍA
+   ────────────────────────────────────────────────────────────────────────── */
+.flujo-table th,.flujo-table td{padding:5px 8px}
+.flujo-table td{text-align:right}           /* números por defecto a la derecha */
+.flujo-table td.left{text-align:left!important}
+.flujo-table td.num{text-align:right!important}
+
+/* Primera columna: sticky */
+.flujo-table th:first-child,
+.flujo-table td:first-child{
+  position:sticky;left:0;z-index:1;
+  min-width:180px;max-width:200px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-align:left!important;
+}
+/* Fondos explícitos por tipo de fila para cubrir contenido al hacer scroll */
+.flujo-table thead th:first-child{background:var(--soft)}
+.flujo-row td:first-child{background:#fff}
+.flujo-h1-usd td:first-child{background:var(--fl-usd-bg)!important}
+.flujo-h1-ars td:first-child{background:var(--fl-ars-bg)!important}
+.flujo-sub1 td:first-child{background:var(--fl-sub1-bg)!important}
+.flujo-tc td:first-child{background:var(--fl-tc-bg)!important}
+.flujo-total td:first-child{background:var(--fl-total-bg)!important}
+
+/* Tabla wrap con overflow correcto para sticky */
+.flujo-wrap{overflow-x:auto;overflow-y:auto;max-height:520px;border:1px solid var(--line);border-radius:9px;}
+
+/* Nivel 1: Moneda (USD / ARS) */
+.flujo-h1 td{font-weight:900!important;font-size:14px!important;border-bottom:2px solid rgba(0,0,0,.08)}
+.flujo-h1-usd td{background:var(--fl-usd-bg)!important;color:var(--fl-usd-txt)!important}
+.flujo-h1-ars td{background:var(--fl-ars-bg)!important;color:var(--fl-ars-txt)!important}
+/* Nivel 2: Fuera / Dentro de Balanz */
+.flujo-h2 td{font-weight:700!important;font-size:12px!important}
+.flujo-h2-fuera td{background:var(--fl-fuera-bg)!important;color:var(--fl-fuera-txt)!important}
+.flujo-h2-dentro td{background:var(--fl-dentro-bg)!important;color:var(--fl-dentro-txt)!important}
+/* Nivel 3: Instrumento */
+.flujo-row td{background:var(--fl-row-bg);font-size:11px!important}
+/* Subtotales L2 */
+.flujo-sub2 td{background:var(--fl-sub2-bg)!important;color:var(--fl-sub2-txt);font-weight:700;font-size:11px!important}
+/* Subtotales L1 */
+.flujo-sub1 td{background:var(--fl-sub1-bg)!important;color:var(--fl-sub1-txt);font-weight:800;font-size:12px!important}
+/* TC */
+.flujo-tc td{background:var(--fl-tc-bg)!important;color:var(--fl-tc-txt);font-style:italic;font-size:10.5px!important}
+/* Total */
+.flujo-total td{background:var(--fl-total-bg)!important;color:var(--fl-total-txt)!important;font-weight:800;font-size:13px!important}
+/* Hover – solo en filas instrumento */
+.flujo-row:hover td{background:#f0f7ff!important}
+.flujo-h1:hover td,.flujo-h2:hover td,.flujo-sub1:hover td,.flujo-sub2:hover td,
+.flujo-tc:hover td,.flujo-total:hover td{background:inherit!important}
+
+/* Botón colapsar – dentro del td, flex, sin superposición */
+.flujo-hdr-cell{display:flex;align-items:center;gap:7px}
+.collapse-btn{
+  background:none;border:none;cursor:pointer;
+  font-size:11px;padding:0 2px;opacity:.6;flex-shrink:0;
+  line-height:1;color:inherit;
+}
+.collapse-btn:hover{opacity:1}
+
+/* NAV COLOR DOTS */
+.dot-dash{background:#818cf8}
+.dot-flujo{background:#60a5fa}
+.dot-mov{background:#fbbf24}
+.dot-buck{background:#34d399}
+.dot-inst{background:#a78bfa}
+.dot-opp{background:#f87171}
+.dot-obj{background:#fb923c}
+.dot-imp{background:#2dd4bf}
+.dot-graf{background:#f472b6}
+.dot-reco{background:#818cf8}
+.dot-info{background:#f59e0b}
+.dot-cfg{background:#94a3b8}
+
+/* TAB FLASH DOT */
+nav button{position:relative}
+.tab-flash-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;
+  display:none;margin-left:auto;flex-shrink:0;
+  box-shadow:0 0 0 2px rgba(34,197,94,.3)}
+@keyframes fdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.tab-flash-dot.on{display:inline-block;animation:fdot .7s ease-in-out infinite}
+
+/* FILAS DUPLICADAS */
+tr.dup-row td{background:#fef9c3!important;border-left:3px solid #f59e0b}
+tr.dup-row td:first-child::before{content:"⚠ ";color:#d97706;font-size:10px}
+
+/* MONTO CLICK-TO-EDIT */
+.monto-txt{cursor:pointer;font-weight:600;display:inline-block;min-width:60px;text-align:right}
+.monto-txt:hover{text-decoration:underline dotted var(--muted)}
+.monto-inp{display:none;width:100px;text-align:right}
+
+/* FORM SECTION */
+.form-section{background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:12px;margin-top:10px}
+.form-section h3{margin-top:0}
+.lbl{font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px}
+
+/* GLOSSARY */
+.glossary{background:#f8f9fc;border-top:2px solid var(--line);margin-top:14px;padding:12px;border-radius:0 0 10px 10px;font-size:11px}
+.glossary h3{margin-top:0}
+.glossary dt{font-weight:700;color:var(--dark);display:inline}
+.glossary dd{display:inline;color:var(--muted);margin:0 0 0 4px}
+.glossary p{margin:3px 0}
+
+@media(max-width:960px){.app{grid-template-columns:1fr}nav{height:auto}.grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<script>
+/* ── LOGIN GUARD ─────────────────────────────────────────────────────────── */
+(function(){
+  const PASS    = "dani2026";           // ← cambiá esto por tu contraseña
+  const SESSION = "inv_session_ok";
+
+  function h(s){ let n=5381; for(let i=0;i<s.length;i++) n=(n*33^s.charCodeAt(i))>>>0; return n.toString(36); }
+
+  if(sessionStorage.getItem(SESSION) === h(PASS)) return; // ya autenticado
+
+  // Bloquear el body hasta que ingrese la contraseña
+  document.addEventListener("DOMContentLoaded", function(){
+    document.body.style.display = "none";
+  });
+
+  // Pantalla de login
+  const overlay = document.createElement("div");
+  overlay.id = "loginOverlay";
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:99999;
+    background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);
+    display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif`;
+
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:18px;padding:40px 36px;width:340px;
+                box-shadow:0 24px 60px rgba(0,0,0,.4);text-align:center">
+      <div style="font-size:38px;margin-bottom:10px">💹</div>
+      <h2 style="font-size:19px;font-weight:900;color:#1e293b;margin:0 0 4px">Inversiones Dani</h2>
+      <p style="font-size:11.5px;color:#94a3b8;margin:0 0 22px">Ingresá tu contraseña</p>
+      <input id="pwdInput" type="password" placeholder="••••••••"
+        style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;
+               border-radius:9px;font-size:16px;text-align:center;
+               letter-spacing:5px;outline:none;margin-bottom:6px;box-sizing:border-box">
+      <div id="pwdError" style="color:#dc2626;font-size:11px;height:16px;margin-bottom:6px"></div>
+      <button id="pwdBtn"
+        style="width:100%;padding:11px;background:#1e293b;color:white;border:none;
+               border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;
+               transition:opacity .15s">
+        Entrar →
+      </button>
+    </div>`;
+
+  document.head.insertAdjacentHTML("beforeend",
+    `<style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap')</style>`);
+
+  function tryLogin(){
+    const v = document.getElementById("pwdInput").value;
+    if(h(v) === h(PASS)){
+      sessionStorage.setItem(SESSION, h(PASS));
+      overlay.remove();
+      document.body.style.display = "";
+    } else {
+      document.getElementById("pwdError").textContent = "Contraseña incorrecta";
+      document.getElementById("pwdInput").value = "";
+      document.getElementById("pwdInput").focus();
+      setTimeout(()=>{ const e=document.getElementById("pwdError"); if(e) e.textContent=""; }, 2000);
+    }
+  }
+
+  document.getElementById("pwdBtn")?.addEventListener("click", tryLogin);
+  document.addEventListener("keydown", e=>{ if(e.key==="Enter") tryLogin(); });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    document.body.appendChild(overlay);
+    document.body.style.display = "";
+    setTimeout(()=> document.getElementById("pwdInput")?.focus(), 100);
+  });
+})();
+</script>
+<header>
+  <h1>💹 Inversiones Dani v6</h1>
+  <span class="save-ind" id="saveInd">—</span>
+  <span id="cloudInd" style="font-size:10px;color:#8897b3;display:none"></span>
+  <button id="btnPrivacy" onclick="togglePrivacy()"
+    title="Ocultar/mostrar montos"
+    style="background:transparent;border:1px solid #ffffff30;color:#fff;border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;transition:all .15s"
+    >👁</button>
+  <button class="btn secondary btn-xs" onclick="exportJSON()">⬇ JSON</button>
+  <button class="btn primary btn-xs" onclick="saveNow()">💾 Guardar</button>
+</header>
+
+<div class="app">
+<nav id="nav">
+  <div class="nav-section">Principal</div>
+  <button onclick="showTab('flujo',this)"><span class="dot dot-flujo"></span>Flujo mensual</button>
+  <button onclick="showTab('movimientos',this)"><span class="dot dot-mov"></span>Movimientos</button>
+  <div class="nav-section">Cartera</div>
+  <button onclick="showTab('buckets',this)"><span class="dot dot-buck"></span>Buckets</button>
+  <button onclick="showTab('instrumentos',this)"><span class="dot dot-inst"></span>Instrumentos</button>
+  <button onclick="showTab('oportunidad',this)"><span class="dot dot-opp"></span>Costo oportunidad</button>
+  <button onclick="showTab('objetivos',this)"><span class="dot dot-obj"></span>Objetivos</button>
+  <div class="nav-section">Datos</div>
+  <button onclick="showTab('importar',this)"><span class="dot dot-imp"></span>Importar</button>
+  <button onclick="showTab('graficos',this)" class="active"><span class="dot dot-graf"></span>Gráficos</button>
+  <button onclick="showTab('recomendaciones',this)"><span class="dot dot-reco"></span>Recomendaciones</button>
+  <button onclick="showTab('infoinstrumentos',this)"><span class="dot dot-info"></span>Info instrumentos</button>
+  <button onclick="showTab('config',this)"><span class="dot dot-cfg"></span>Config</button>
+</nav>
+
+<main>
+
+<!-- inputs de parámetros ocultos (necesarios para P()) -->
+<div style="display:none">
+  <input id="mep" type="number" value="1458.42" step="0.01" oninput="debounceRecalc()">
+  <input id="cable" type="number" value="1511.28" step="0.01">
+  <input id="benchUsd" type="number" value="2.5" step="0.1" oninput="debounceRecalc()">
+  <input id="benchArs" type="number" value="2.5" step="0.1" oninput="debounceRecalc()">
+  <input id="benchCedear" type="number" value="8.0" step="0.1" oninput="debounceRecalc()">
+  <input id="fechaRef" type="date" oninput="debounceRecalc()">
+</div>
+
+<!-- FLUJO MENSUAL -->
+<section id="flujo" class="tab">
+  <div class="card">
+    <!-- Toolbar -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <h2 style="margin:0;flex:1">Flujo mensual por bucket</h2>
+      <button class="toggle-btn on btn-xs" id="btnFlujoUsdEq" onclick="toggleFlujoUsdEq()">≈ USD equivalente</button>
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px">
+        <select id="flujoDesde" onchange="renderFlujo()" style="font-size:10.5px;padding:3px 6px;border-radius:6px;border:1px solid var(--line)"></select>
+        <span style="color:var(--muted)">–</span>
+        <select id="flujoHasta" onchange="renderFlujo()" style="font-size:10.5px;padding:3px 6px;border-radius:6px;border:1px solid var(--line)"></select>
+      </div>
+      <button class="btn secondary btn-xs" onclick="downloadFlujoCSV()" title="Descargar CSV">⬇ CSV</button>
+      <button class="toggle-btn btn-xs" id="btnFlujoEdit" onclick="toggleTcEdit()">TC</button>
+    </div>
+    <!-- TC Edit panel -->
+    <div id="tcEditPanel" style="display:none;margin-bottom:10px">
+      <div class="notice" style="margin-bottom:6px">Ingresá el cierre del dólar MEP para cada mes. Se usa para convertir ARS → USD en el total.</div>
+      <div id="tcInputs" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <!-- Tabla -->
+    <div class="flujo-wrap"><table class="flujo-table" id="tablaFlujo"></table></div>
+    <!-- Leyenda -->
+    <div style="display:flex;gap:14px;margin-top:8px;font-size:9.5px;color:var(--muted)">
+      <span>ⓘ Los valores ARS se muestran en moneda original. La conversión a USD equivalente utiliza el TC (MEP cierre) de cada mes.</span>
+      <span style="margin-left:auto;display:flex;gap:10px">
+        <span style="color:#16a34a">● Aporte / Rendimiento</span>
+        <span style="color:#dc2626">● Rescate / Gastos</span>
+        <span>○ Sin movimientos</span>
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- MOVIMIENTOS -->
+<section id="movimientos" class="tab">
+  <div class="card">
+    <h2>Agregar movimiento</h2>
+    <div class="grid grid-4" style="margin-bottom:8px">
+      <div><label class="lbl">Fecha</label><input id="movFecha" type="date"></div>
+      <div><label class="lbl">Bucket</label><select id="movBucket"></select></div>
+      <div><label class="lbl">Moneda</label><select id="movMoneda"><option>USD</option><option>ARS</option></select></div>
+      <div><label class="lbl">Tipo</label><select id="movTipo"><option>Aporte</option><option>Compra</option><option>Venta/Rescate</option><option>Rendimiento</option><option>Cupón</option><option>Dividendo</option><option>Ajuste valuación</option></select></div>
+      <div><label class="lbl">Monto (+/-)</label><input id="movMonto" type="number" placeholder="+1000 ó -500"></div>
+      <div><label class="lbl">Instrumento</label><input id="movInstrumento" placeholder="Ej: ESTRA1A"></div>
+      <div><label class="lbl">Archivo origen</label><input id="movArchivo" placeholder="Ej: Resumen.pdf"></div>
+      <div><label class="lbl">Notas</label><input id="movNotas" placeholder="Notas"></div>
+    </div>
+    <button class="btn primary btn-xs" onclick="addMovimiento()">+ Agregar movimiento</button>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <h2 style="margin:0">Historial <span style="color:var(--muted);font-weight:400" id="movCount"></span></h2>
+      <div style="display:flex;gap:5px;margin-left:auto;flex-wrap:wrap;align-items:center">
+        <span style="font-size:10px;color:var(--muted)">Desde</span>
+        <input type="date" id="filtroMovDesde" onchange="renderMovs()" style="font-size:11px;padding:4px 6px;width:130px">
+        <span style="font-size:10px;color:var(--muted)">Hasta</span>
+        <input type="date" id="filtroMovHasta" onchange="renderMovs()" style="font-size:11px;padding:4px 6px;width:130px">
+        <select id="filtroMovBucket" onchange="renderMovs()" style="font-size:11px;padding:4px 6px;max-width:150px"><option value="">Todos los buckets</option></select>
+        <select id="filtroMovTipo" onchange="renderMovs()" style="font-size:11px;padding:4px 6px"><option value="">Todos los tipos</option><option>Aporte</option><option>Compra</option><option>Venta/Rescate</option><option>Rendimiento</option><option>Cupón</option><option>Dividendo</option><option>Ajuste valuación</option></select>
+        <button class="btn secondary btn-xs" onclick="document.getElementById('filtroMovDesde').value='';document.getElementById('filtroMovHasta').value='';renderMovs()">✕ Limpiar</button>
+        <button class="btn secondary btn-xs" onclick="verificarDuplicados()" title="Detectar posibles movimientos duplicados">🔍 Verificar duplicados</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table id="tablaMovimientos">
+      <thead><tr>
+        <th class="left">Fecha</th>
+        <th>Bucket</th>
+        <th>Mon.</th>
+        <th>Tipo</th>
+        <th class="num">Monto</th>
+        <th class="left">Instrumento</th>
+        <th class="left">Archivo</th>
+        <th class="left">Notas</th>
+        <th style="font-size:9px;white-space:nowrap">Actualiz.</th>
+        <th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- BUCKETS -->
+<section id="buckets" class="tab">
+  <div class="card">
+    <h2>Buckets / cajas</h2>
+    <div class="notice">Cada bucket es una "caja": puede ser una cuenta bancaria, un instrumento financiero o un sobre. El saldo actual = saldoInicial + todos los movimientos asociados.</div>
+    <div class="table-wrap"><table id="tablaBuckets">
+      <thead><tr>
+        <th class="left">Bucket</th>
+        <th>Grupo</th>
+        <th>Mon.</th>
+        <th>Objetivo</th>
+        <th class="num">Saldo inicial</th>
+        <th class="num">Saldo actual</th>
+        <th class="num">USD eq.</th>
+        <th class="left">Notas</th>
+        <th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="form-section">
+      <h3>Nuevo bucket</h3>
+      <div class="grid grid-4">
+        <div><label class="lbl">Nombre</label><input id="buckNombre" placeholder="Ej: Efectivo USD"></div>
+        <div><label class="lbl">Grupo</label><select id="buckGrupo"><option>Ahorro previo</option><option>Inversión Balanz</option><option>Otro</option></select></div>
+        <div><label class="lbl">Moneda</label><select id="buckMoneda"><option>USD</option><option>ARS</option></select></div>
+        <div><label class="lbl">Objetivo</label><input id="buckObjetivo" placeholder="Ej: Casa"></div>
+        <div><label class="lbl">Saldo inicial</label><input id="buckSaldo" type="number" placeholder="0"></div>
+        <div><label class="lbl">Notas</label><input id="buckNotas" placeholder="Notas"></div>
+      </div>
+      <button class="btn primary btn-xs" onclick="addBucket()" style="margin-top:8px">+ Agregar bucket</button>
+    </div>
+  </div>
+</section>
+
+<!-- INSTRUMENTOS -->
+<section id="instrumentos" class="tab">
+  <div class="card">
+    <h2>Instrumentos y valuación</h2>
+    <div class="notice">Registrá el valor de mercado actual de cada activo. El rendimiento se calcula contra el monto de referencia inicial.</div>
+    <div class="table-wrap"><table id="tablaInstrumentos">
+      <thead><tr>
+        <th class="left">Instrumento</th>
+        <th>Bucket</th>
+        <th>Tipo</th>
+        <th>Mon.</th>
+        <th>Fecha ref. ①</th>
+        <th class="num">Monto ref. ②</th>
+        <th class="num">Valor actual ③</th>
+        <th class="num">USD eq.</th>
+        <th class="num">Rend. ④</th>
+        <th>Benchmark ⑤</th>
+        <th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="form-section">
+      <h3>Nuevo instrumento</h3>
+      <div class="grid grid-4">
+        <div><label class="lbl">Nombre / ticker</label><input id="instNombre" placeholder="Ej: ESTRA1A"></div>
+        <div><label class="lbl">Bucket</label><select id="instBucket"></select></div>
+        <div><label class="lbl">Tipo</label><select id="instTipo"><option>FCI USD</option><option>FCI ARS</option><option>ON USD</option><option>CEDEAR</option><option>Acciones</option><option>Crypto</option><option>Plazo fijo</option><option>Otro</option></select></div>
+        <div><label class="lbl">Moneda real</label><select id="instMoneda"><option>USD</option><option>ARS</option></select></div>
+        <div><label class="lbl">Fecha referencia ①</label><input id="instFecha" type="date"></div>
+        <div><label class="lbl">Monto referencia ②</label><input id="instInicial" type="number" placeholder="0"></div>
+        <div><label class="lbl">Valor actual ③</label><input id="instActual" type="number" placeholder="0"></div>
+        <div><label class="lbl">Benchmark ⑤</label><select id="instBenchmark"><option>USD conservador</option><option>ARS money market</option><option>SPY/CEDEAR</option></select></div>
+      </div>
+      <button class="btn primary btn-xs" onclick="addInstrumento()" style="margin-top:8px">+ Agregar instrumento</button>
+    </div>
+    <div class="glossary">
+      <h3>Cómo leer esta tabla</h3>
+      <p><dt>① Fecha referencia</dt> <dd>— A partir de qué fecha se mide el rendimiento de este instrumento.</dd></p>
+      <p><dt>② Monto referencia</dt> <dd>— Lo que pusiste originalmente (o el equivalente que querés comparar).</dd></p>
+      <p><dt>③ Valor actual</dt> <dd>— Lo que vale hoy ese instrumento según la última cotización disponible.</dd></p>
+      <p><dt>④ Rendimiento</dt> <dd>— (Valor actual − Monto referencia) / Monto referencia. Simple, sin anualizar.</dd></p>
+      <p><dt>⑤ Benchmark</dt> <dd>— La alternativa contra la que se compara en "Costo oportunidad".</dd></p>
+    </div>
+  </div>
+</section>
+
+<!-- COSTO OPORTUNIDAD -->
+<section id="oportunidad" class="tab">
+  <div class="card">
+    <h2>Costo de oportunidad</h2>
+    <div class="notice"><b>¿Cómo leer esto?</b> "Valor alternativo" = lo que tendrías si el monto de referencia hubiera estado en la alternativa elegida desde la fecha de referencia hasta hoy.</div>
+    <div class="table-wrap"><table id="tablaOportunidad">
+      <thead><tr>
+        <th class="left">Instrumento</th>
+        <th>Tipo</th>
+        <th class="num">Monto ref.</th>
+        <th class="num">Valor actual</th>
+        <th>Alternativa</th>
+        <th class="num">Valor alternativo</th>
+        <th class="num">Diferencia</th>
+        <th>Meses</th>
+        <th>Resultado</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <h2 style="margin:0">Benchmarks y fuentes</h2>
+      <button class="btn secondary btn-xs" onclick="actualizarBenchmarks()" id="btnActBench">🔄 Actualizar MEP via API</button>
+    </div>
+    <table style="font-size:11px">
+      <thead><tr>
+        <th class="left">Benchmark</th>
+        <th class="left">Qué mide</th>
+        <th class="left">Tasa configurada</th>
+        <th class="left">Fuente del dato</th>
+        <th class="left">Link</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="left"><b>USD conservador</b></td>
+          <td class="left">FCI USD money market (ej. ESTRA1A)</td>
+          <td class="left" id="benchUsdRef">—</td>
+          <td class="left">Balanz / CAFCI — tasa promedio FCIs dólar corto plazo</td>
+          <td class="left"><a href="https://cafci.org.ar" target="_blank" style="color:var(--blue);font-size:10px">cafci.org.ar ↗</a></td>
+        </tr>
+        <tr>
+          <td class="left"><b>ARS money market</b></td>
+          <td class="left">FCI de liquidez en pesos (ej. BCAHA)</td>
+          <td class="left" id="benchArsRef">—</td>
+          <td class="left">CAFCI — tasa promedio FCIs Money Market ARS</td>
+          <td class="left"><a href="https://cafci.org.ar" target="_blank" style="color:var(--blue);font-size:10px">cafci.org.ar ↗</a></td>
+        </tr>
+        <tr>
+          <td class="left"><b>SPY / CEDEAR</b></td>
+          <td class="left">Referencia ETF S&P 500 (retorno histórico ~10% anual)</td>
+          <td class="left" id="benchCedearRef">—</td>
+          <td class="left">Yahoo Finance — retorno histórico SPY</td>
+          <td class="left"><a href="https://finance.yahoo.com/quote/SPY" target="_blank" style="color:var(--blue);font-size:10px">Yahoo Finance ↗</a></td>
+        </tr>
+        <tr>
+          <td class="left"><b>MEP (dólar bolsa)</b></td>
+          <td class="left">Tipo de cambio para conversión ARS↔USD</td>
+          <td class="left" id="mepRef">—</td>
+          <td class="left">dolarapi.com — cotización en tiempo real</td>
+          <td class="left"><a href="https://dolarapi.com/v1/dolares/bolsa" target="_blank" style="color:var(--blue);font-size:10px">dolarapi.com ↗</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <div id="benchUpdateMsg" style="display:none;margin-top:8px;font-size:10.5px"></div>
+  </div>
+</section>
+
+<!-- OBJETIVOS -->
+<section id="objetivos" class="tab">
+  <div class="card">
+    <h2>Objetivos activos</h2>
+    <div class="table-wrap"><table id="tablaObjetivos">
+      <thead><tr>
+        <th class="left" style="min-width:140px">Objetivo</th>
+        <th>Mon.</th>
+        <th class="num" style="min-width:80px">Target</th>
+        <th class="num" style="min-width:80px">Actual</th>
+        <th style="min-width:120px">Avance</th>
+        <th>Fecha</th>
+        <th>Buckets</th>
+        <th>Status</th>
+        <th class="left">Notas</th>
+        <th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="form-section">
+      <h3>Nuevo objetivo</h3>
+      <div class="grid grid-4">
+        <div><label class="lbl">Nombre</label><input id="objNombre" placeholder="Ej: Casa 2029"></div>
+        <div><label class="lbl">Moneda</label><select id="objMoneda" style="max-width:100px"><option>USD</option><option>ARS</option></select></div>
+        <div><label class="lbl">Target</label><input id="objTarget" type="number" placeholder="0"></div>
+        <div><label class="lbl">Fecha objetivo</label><input id="objFecha" type="month"></div>
+        <div style="grid-column:1/-1"><label class="lbl">Notas</label><input id="objNotas" placeholder="Notas"></div>
+      </div>
+      <div style="margin-top:8px">
+        <label class="lbl">Buckets asignados</label>
+        <div id="objBucketsSelect" style="margin-top:5px;display:flex;flex-wrap:wrap;gap:5px"></div>
+      </div>
+      <button class="btn primary btn-xs" onclick="addObjetivo()" style="margin-top:10px">+ Agregar objetivo</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Historial archivados</h2>
+    <table id="tablaObjetivosHist" style="font-size:11px">
+      <thead><tr><th>Fecha</th><th>Objetivo</th><th class="num">Target</th><th class="num">Alcanzado</th><th>Motivo</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- IMPORTAR -->
+<section id="importar" class="tab">
+  <div class="card">
+    <h2>Importar archivos</h2>
+    <div class="notice">Registrá tus archivos de Balanz/MP acá. Cada archivo nuevo que contenga instrumentos o buckets no registrados <b>se agregará automáticamente</b> al detectar su nombre en el mapa de abajo.</div>
+    <div class="notice" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;margin-top:6px">
+      <b>⚠ Sin riesgo de duplicados hoy:</b> el navegador no puede leer el contenido de los PDFs, así que importar un archivo <em>no</em> crea movimientos automáticamente — eso lo hacés vos a mano. La guardia antiduplicate igual está activa: si intentás cargar manualmente una transacción que ya existe (misma fecha, bucket, tipo y monto), el sistema te avisa antes de guardarla.
+    </div>
+    <input type="file" id="fileInput" multiple accept=".pdf,.xlsx,.xls,.csv,.txt" style="margin-bottom:8px">
+    <button class="btn primary btn-xs" onclick="registrarImport()">Registrar en historial</button>
+    <div id="importSummary" style="display:none;margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <h2>Mapa archivos → datos</h2>
+    <table style="font-size:11px">
+      <thead><tr><th class="left">Archivo</th><th class="left">Qué cargar</th></tr></thead>
+      <tbody>
+        <tr><td class="left">ResumenDeCuenta_*.pdf</td><td class="left">Tenencia consolidada: total, MEP, CEDEARs, ON, FCI, cash</td></tr>
+        <tr><td class="left">ResumenFCI_*.pdf</td><td class="left">FCI: cuotapartes, valor cuota, total por fondo</td></tr>
+        <tr><td class="left">ResumenEstadodeCuenta_*.pdf</td><td class="left">Movimientos mensuales: ingresos, compras, suscripciones</td></tr>
+        <tr><td class="left">financial_performance_usd_*.pdf</td><td class="left">MP USD: saldos, rendimientos, cuotapartes</td></tr>
+        <tr><td class="left">GASTOS *.xlsx</td><td class="left">Proyección ahorro si tiene pestañas Inversión ejecutada</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Historial</h2>
+    <table id="tablaUploads" style="font-size:11px">
+      <thead><tr><th>Fecha</th><th class="left">Archivo</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- GRÁFICOS (también es el dashboard principal) -->
+<section id="graficos" class="tab active">
+
+  <!-- KPIs -->
+  <div class="grid grid-5" id="kpis" style="margin-bottom:12px"></div>
+
+  <!-- Parámetros compactos -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <span style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Parámetros</span>
+      <div style="display:flex;align-items:center;gap:5px">
+        <label class="lbl" style="margin:0;white-space:nowrap">MEP</label>
+        <input class="ie" id="mepVis" type="number" value="1458.42" step="0.01"
+          style="width:90px;border:1px solid var(--line);background:white;border-radius:6px;padding:3px 6px"
+          oninput="document.getElementById('mep').value=this.value;debounceRecalc()">
+        <button class="btn secondary btn-xs" onclick="fetchMepVis()">🔄</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <label class="lbl" style="margin:0;white-space:nowrap">Bench USD %</label>
+        <input class="ie" id="benchUsdVis" type="number" value="2.5" step="0.1"
+          style="width:60px;border:1px solid var(--line);background:white;border-radius:6px;padding:3px 6px"
+          oninput="document.getElementById('benchUsd').value=this.value;debounceRecalc()">
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <label class="lbl" style="margin:0;white-space:nowrap">Bench ARS % mensual</label>
+        <input class="ie" id="benchArsVis" type="number" value="2.5" step="0.1"
+          style="width:60px;border:1px solid var(--line);background:white;border-radius:6px;padding:3px 6px"
+          oninput="document.getElementById('benchArs').value=this.value;debounceRecalc()">
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <label class="lbl" style="margin:0;white-space:nowrap">Bench CEDEAR %</label>
+        <input class="ie" id="benchCedearVis" type="number" value="8.0" step="0.1"
+          style="width:60px;border:1px solid var(--line);background:white;border-radius:6px;padding:3px 6px"
+          oninput="document.getElementById('benchCedear').value=this.value;debounceRecalc()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Evolución acumulada -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+      <h2 style="margin:0">Evolución acumulada</h2>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--muted);align-self:center">Vista:</span>
+        <button class="toggle-btn on btn-xs" id="btnEvolTotal" onclick="setEvolView('total')">Total</button>
+        <button class="toggle-btn btn-xs" id="btnEvolStack" onclick="setEvolView('stacked')">Por bucket</button>
+        <span style="font-size:10px;color:var(--muted);align-self:center;margin-left:4px">Moneda:</span>
+        <button class="toggle-btn on btn-xs" id="btnEvolUsd" onclick="setEvolCurrency('USD')">USD</button>
+        <button class="toggle-btn btn-xs" id="btnEvolArs" onclick="setEvolCurrency('ARS')">ARS</button>
+      </div>
+    </div>
+    <div class="chart-container" style="height:200px"><canvas id="chartEvol"></canvas></div>
+  </div>
+
+  <div class="grid grid-2">
+
+    <!-- Distribución por categoría: donut doble anillo + tabla -->
+    <div class="card" style="grid-column:1/-1">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0">Distribución por tipo de activo</h2>
+        <div style="display:flex;gap:4px">
+          <button class="toggle-btn on btn-xs" id="btnCatUsd" onclick="setCatMoneda('USD')">USD</button>
+          <button class="toggle-btn btn-xs" id="btnCatArs" onclick="setCatMoneda('ARS')">ARS</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start">
+        <!-- Donut doble anillo -->
+        <div style="position:relative;height:260px">
+          <canvas id="chartCategoria"></canvas>
+        </div>
+        <!-- Tabla de detalle por categoría -->
+        <div id="tablaCatDetalle"></div>
+      </div>
+    </div>
+
+    <!-- Liquidez: cuánto puedo rescatar y cuándo -->
+    <div class="card">
+      <h2>¿Cuándo puedo rescatar? <span style="font-size:10px;color:var(--muted);font-weight:400">— click en barra para ver activos</span></h2>
+      <div class="chart-container" style="height:220px"><canvas id="chartLiquidez"></canvas></div>
+      <div style="font-size:9.5px;color:var(--muted);margin-top:6px;text-align:center">
+        La línea muestra el capital total acumulado disponible a cada plazo
+      </div>
+    </div>
+
+    <!-- Ingresos pasivos apilados por tipo -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h2 style="margin:0">Ingresos pasivos mensuales</h2>
+        <div style="display:flex;gap:4px">
+          <button class="toggle-btn on btn-xs" id="btnIngUsd" onclick="setIngresosMoneda('USD')">USD</button>
+          <button class="toggle-btn btn-xs" id="btnIngArs" onclick="setIngresosMoneda('ARS')">ARS</button>
+        </div>
+      </div>
+      <div class="chart-container"><canvas id="chartIngresos"></canvas></div>
+    </div>
+
+    <!-- Objetivos: rueditas SVG por objetivo -->
+    <div class="card">
+      <h2>Objetivos — avance</h2>
+      <div id="objCircles" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start;padding:4px 0"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- RECOMENDACIONES -->
+<section id="recomendaciones" class="tab">
+  <div class="card">
+    <h2>💡 Asesor de asignación</h2>
+    <div class="notice">Esta pestaña analiza tus objetivos, plazos y fondos disponibles para sugerirte cómo asignar nuevos aportes. <b>No ejecuta operaciones.</b> Solo sugiere.</div>
+    <div class="grid grid-4" style="margin-bottom:12px">
+      <div>
+        <label class="lbl">💵 Efectivo disponible (USD)</label>
+        <input type="number" id="recoEfectivo" placeholder="0" oninput="renderRecomendaciones()" style="max-width:200px">
+      </div>
+      <div>
+        <label class="lbl">🪙 Efectivo disponible (ARS)</label>
+        <input type="number" id="recoEfectivoArs" placeholder="0" oninput="renderRecomendaciones()" style="max-width:200px">
+      </div>
+      <div>
+        <label class="lbl">💵 Nuevos aportes mensuales (USD)</label>
+        <input type="number" id="recoAportes" placeholder="0" oninput="renderRecomendaciones()" style="max-width:200px">
+      </div>
+      <div>
+        <label class="lbl">🪙 Nuevos aportes mensuales (ARS)</label>
+        <input type="number" id="recoAportesArs" placeholder="0" oninput="renderRecomendaciones()" style="max-width:200px">
+      </div>
+    </div>
+    <button class="btn primary btn-xs" onclick="renderRecomendaciones()">🔄 Recalcular</button>
+  </div>
+
+  <!-- Gap analysis -->
+  <div class="card">
+    <h2>Brecha por objetivo</h2>
+    <div class="table-wrap"><table id="tablaRecoObjetivos">
+      <thead><tr>
+        <th class="left">Objetivo</th>
+        <th>Moneda</th>
+        <th class="num">Target</th>
+        <th class="num">Actual</th>
+        <th class="num">Faltante</th>
+        <th>Plazo</th>
+        <th class="num">Meses restantes</th>
+        <th class="num">Aporte mensual req.</th>
+        <th>Estado</th>
+      </tr></thead>
+      <tbody id="recoObjetivosBody"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Sugerencia de asignación -->
+  <div class="card" id="recoSugerenciaCard">
+    <h2>Sugerencia de asignación</h2>
+    <div id="recoSugerencia"></div>
+  </div>
+</section>
+
+<!-- INFO INSTRUMENTOS -->
+<section id="infoinstrumentos" class="tab">
+<style>
+.info-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+.info-card h3{font-size:13px;font-weight:800;color:var(--dark);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.info-card .sub{font-size:10px;color:var(--muted);margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap}
+.info-card p{font-size:11.5px;color:var(--text);line-height:1.6;margin-bottom:6px}
+.info-card .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.info-badge{display:inline-flex;align-items:center;gap:4px;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:600;border:1px solid transparent}
+.ib-blue{background:#eff6ff;color:#1e40af;border-color:#bfdbfe}
+.ib-green{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
+.ib-amber{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.ib-red{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+.ib-grey{background:#f8fafc;color:#475569;border-color:#e2e8f0}
+.ib-purple{background:#faf5ff;color:#4c1d95;border-color:#ddd6fe}
+.riesgo-bar{display:flex;align-items:center;gap:6px;margin-top:4px}
+.riesgo-bar span{font-size:10px;color:var(--muted);width:40px}
+.riesgo-dots{display:flex;gap:3px}
+.riesgo-dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.riesgo-dots i.on-low{background:#34c77b}
+.riesgo-dots i.on-med{background:#fbbf24}
+.riesgo-dots i.on-hi{background:#f87171}
+.info-link{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--blue);text-decoration:none;border:1px solid #bfdbfe;border-radius:6px;padding:3px 8px;margin-top:8px}
+.info-link:hover{background:#eff6ff}
+.info-divider{height:1px;background:var(--line);margin:8px 0}
+</style>
+
+<div class="notice">📚 Guía rápida de tus instrumentos. Sin jerga financiera. Si querés profundizar, cada uno tiene un link al final.</div>
+
+<!-- ESTRA1A -->
+<div class="info-card">
+  <h3>
+    <span class="pill usdp">USD</span>
+    FCI ESTRA1A — Balanz Estrategia Dólar Corto Plazo
+  </h3>
+  <div class="sub">
+    <span class="pill greyp">Fondo Común de Inversión</span>
+    <span class="pill infop">Balanz</span>
+  </div>
+  <p><b>¿Qué es en simple?</b> Un "sobre" donde juntás dólares con otros inversores, y el fondo los presta de forma muy corta (letras, bonos de corto plazo en USD). El fondo cobra intereses y te los acredita subiendo el valor de tu cuotaparte.</p>
+  <p><b>¿Le prestás al Estado o a una empresa?</b> Mayormente al Estado argentino (letras del Tesoro en USD) y a entidades financieras de alta calificación. Corto plazo, bajo riesgo.</p>
+  <p><b>¿Paga dividendos o cupones?</b> No. No te deposita nada. El rendimiento lo ves como un aumento del precio de tu cuotaparte (el "valor" de tu fondo sube).</p>
+  <div class="info-divider"></div>
+  <div class="row">
+    <span class="info-badge ib-blue">💵 Rendimiento en USD</span>
+    <span class="info-badge ib-green">⚡ Rescate en 1–3 días hábiles</span>
+    <span class="info-badge ib-grey">Sin vencimiento fijo</span>
+  </div>
+  <div class="riesgo-bar">
+    <span>Riesgo</span>
+    <div class="riesgo-dots">
+      <i class="on-low"></i><i class="on-low"></i><i></i><i></i><i></i>
+    </div>
+    <span style="width:auto;color:#16a34a;font-weight:700">Bajo</span>
+  </div>
+  <br>
+  <a class="info-link" href="https://balanz.com/inversiones/fondos-comunes-de-inversion/" target="_blank">🔗 Balanz – Fondos de Inversión</a>
+</div>
+
+<!-- BCAHA -->
+<div class="info-card">
+  <h3>
+    <span class="pill arsp">ARS</span>
+    FCI BCAHA — Balanz Ahorro
+  </h3>
+  <div class="sub">
+    <span class="pill greyp">Money Market (Liquidez)</span>
+    <span class="pill infop">Balanz</span>
+  </div>
+  <p><b>¿Qué es en simple?</b> El equivalente a un plazo fijo, pero mejor: tu plata rinde desde el día 1, podés sacarla cuando quieras y la tasa suele ser mayor que una caja de ahorro. Invierte en plazos fijos bancarios y cuentas remuneradas.</p>
+  <p><b>¿Le prestás al banco?</b> Básicamente sí. El fondo hace plazos fijos en bancos de primera línea.</p>
+  <p><b>¿Paga dividendos?</b> No. El rendimiento sube el valor de tu cuotaparte diariamente. Ves el aumento directo en el saldo.</p>
+  <div class="info-divider"></div>
+  <div class="row">
+    <span class="info-badge ib-green">🪙 Rendimiento en ARS</span>
+    <span class="info-badge ib-green">⚡ Rescate inmediato (T+0)</span>
+    <span class="info-badge ib-grey">Rinde cada día</span>
+  </div>
+  <div class="riesgo-bar">
+    <span>Riesgo</span>
+    <div class="riesgo-dots"><i class="on-low"></i><i></i><i></i><i></i><i></i></div>
+    <span style="width:auto;color:#16a34a;font-weight:700">Muy bajo</span>
+  </div>
+  <br>
+  <a class="info-link" href="https://balanz.com/inversiones/fondos-comunes-de-inversion/" target="_blank">🔗 Balanz – Fondos de Inversión</a>
+</div>
+
+<!-- CREDITO PRIVADO XIV -->
+<div class="info-card">
+  <h3>
+    <span class="pill arsp">ARS</span>
+    FCI Crédito Privado XIV
+  </h3>
+  <div class="sub">
+    <span class="pill greyp">Crédito Corporativo</span>
+    <span class="pill infop">Balanz</span>
+  </div>
+  <p><b>¿Qué es en simple?</b> Un fondo que presta plata a empresas medianas y grandes (no al Estado). A cambio, las empresas pagan tasas más altas. Vos participás de esa tasa a través de tu cuotaparte.</p>
+  <p><b>¿Le prestás a empresas?</b> Sí, directamente a empresas del sector privado argentino. Más rendimiento que el money market, pero con algo más de riesgo porque las empresas pueden tener problemas de pago.</p>
+  <p><b>¿Paga dividendos?</b> No. El rendimiento queda reinvertido y sube el valor de tu cuotaparte.</p>
+  <div class="info-divider"></div>
+  <div class="row">
+    <span class="info-badge ib-green">🪙 Rendimiento en ARS</span>
+    <span class="info-badge ib-amber">⏳ Rescate en 2–5 días hábiles</span>
+    <span class="info-badge ib-amber">Tasa mayor al money market</span>
+  </div>
+  <div class="riesgo-bar">
+    <span>Riesgo</span>
+    <div class="riesgo-dots"><i class="on-low"></i><i class="on-med"></i><i class="on-med"></i><i></i><i></i></div>
+    <span style="width:auto;color:#d97706;font-weight:700">Medio-bajo</span>
+  </div>
+  <br>
+  <a class="info-link" href="https://balanz.com/inversiones/fondos-comunes-de-inversion/" target="_blank">🔗 Balanz – Fondos de Inversión</a>
+</div>
+
+<!-- PAMPA ON MGCTO -->
+<div class="info-card">
+  <h3>
+    <span class="pill usdp">USD</span>
+    ON Pampa Energía — MGCTO
+  </h3>
+  <div class="sub">
+    <span class="pill greyp">Obligación Negociable (bono corporativo)</span>
+    <span class="pill infop">Balanz</span>
+  </div>
+  <p><b>¿Qué es en simple?</b> Le prestás dólares a Pampa Energía (la empresa de energía más grande de Argentina). A cambio, Pampa te paga intereses (cupones) periódicos en dólares y al vencimiento te devuelve el capital. Es como ser el banco de Pampa.</p>
+  <p><b>¿Le prestás a una empresa?</b> Sí, directamente a Pampa Energía. Si la empresa quiebra, podrías perder parte del capital. Es el principal riesgo.</p>
+  <p><b>¿Paga cupones?</b> <span class="pill ok">Sí, en USD 💵</span> Los cupones se acreditan en tu cuenta Balanz según el calendario del prospecto (normalmente semestral). Verificá las fechas exactas en tu resumen de cuenta.</p>
+  <div class="info-divider"></div>
+  <div class="row">
+    <span class="info-badge ib-blue">💵 Cupones en USD</span>
+    <span class="info-badge ib-amber">🏢 Riesgo empresa Argentina</span>
+    <span class="info-badge ib-grey">Vendible en mercado secundario (T+2)</span>
+  </div>
+  <div class="riesgo-bar">
+    <span>Riesgo</span>
+    <div class="riesgo-dots"><i class="on-low"></i><i class="on-med"></i><i class="on-med"></i><i></i><i></i></div>
+    <span style="width:auto;color:#d97706;font-weight:700">Medio</span>
+  </div>
+  <br>
+  <a class="info-link" href="https://balanz.com/inversiones/obligaciones-negociables/" target="_blank">🔗 Balanz – Obligaciones Negociables</a>
+  <a class="info-link" href="https://www.pampaenergia.com/inversores" target="_blank" style="margin-left:6px">🔗 Pampa Energía – Inversores</a>
+</div>
+
+<!-- SPY CEDEAR -->
+<div class="info-card">
+  <h3>
+    <span class="pill arsp">ARS→USD</span>
+    SPY CEDEAR — S&amp;P 500 (las 500 empresas más grandes de EE.UU.)
+  </h3>
+  <div class="sub">
+    <span class="pill greyp">CEDEAR – ETF</span>
+    <span class="pill purp">Acciones globales</span>
+  </div>
+  <p><b>¿Qué es en simple?</b> Comprás en pesos una "fotocopia" del fondo SPY, que contiene acciones de las 500 empresas más grandes de EE.UU. (Apple, Microsoft, Amazon, etc.). No sos dueño de las acciones directamente, sino de un certificado argentino que las sigue.</p>
+  <p><b>¿Le prestás a alguien?</b> No. Sos propietario de una fracción del fondo. Si las acciones suben, tu inversión sube. Si bajan, baja.</p>
+  <p><b>¿Paga dividendos?</b> <span class="pill ok">Sí, en ARS 💵</span> El SPY reparte dividendos aproximadamente <b>4 veces al año</b> (rendimiento histórico ~1.2–1.5% anual sobre el precio en USD). Los dividendos los recibís en ARS al tipo de cambio del momento.</p>
+  <div class="info-divider"></div>
+  <div class="row">
+    <span class="info-badge ib-blue">📈 Cobertura USD (cotiza en ARS pero sigue precio en USD)</span>
+    <span class="info-badge ib-purple">Dividendos ~4x por año en ARS</span>
+    <span class="info-badge ib-amber">Mercado: T+2</span>
+  </div>
+  <div class="riesgo-bar">
+    <span>Riesgo</span>
+    <div class="riesgo-dots"><i class="on-low"></i><i class="on-med"></i><i class="on-med"></i><i class="on-hi"></i><i></i></div>
+    <span style="width:auto;color:#d97706;font-weight:700">Medio-alto</span>
+  </div>
+  <br>
+  <a class="info-link" href="https://www.ssga.com/us/en/intermediary/etfs/funds/spdr-sp-500-etf-trust-spy" target="_blank">🔗 Ficha oficial SPY</a>
+  <a class="info-link" href="https://finance.yahoo.com/quote/SPY" target="_blank" style="margin-left:6px">🔗 Yahoo Finance – SPY</a>
+</div>
+
+<!-- WMT CEDEAR -->
+<div class="info-card">
+  <h3>
+    <span class="pill arsp">ARS→USD</span>
+    WMT CEDEAR — Walmart Inc.
+  </h3>
+  <div class="sub">
+    <span class="pill greyp">CEDEAR – Acción individual</span>
+    <span class="pill purp">Consumo defensivo</span>
+  </div>
+  <p><b>¿Qué es en simple?</b> Comprás en pesos una fracción de la acción de Walmart, la cadena de supermercados más grande del mundo. Es una empresa "defensiva": las personas siguen comprando en el súper aunque la economía vaya mal.</p>
+  <p><b>¿Le prestás a alguien?</b> No. Sos accionista de Walmart. Si la empresa gana, tu inversión sube.</p>
+  <p><b>¿Paga dividendos?</b> <span class="pill ok">Sí, en ARS 💵</span> Walmart paga dividendos <b>4 veces al año</b> (rendimiento ~1.0–1.4% anual en USD). Los recibís en pesos al tipo de cambio del momento. Walmart lleva más de 50 años consecutivos aumentando su dividendo.</p>
+  <div class="info-divider"></div>
+  <div class="row">
+    <span class="info-badge ib-blue">📈 Cobertura USD</span>
+    <span class="info-badge ib-green">Dividendos trimestrales en ARS</span>
+    <span class="info-badge ib-green">Empresa muy estable (S&amp;P 500)</span>
+  </div>
+  <div class="riesgo-bar">
+    <span>Riesgo</span>
+    <div class="riesgo-dots"><i class="on-low"></i><i class="on-med"></i><i class="on-med"></i><i></i><i></i></div>
+    <span style="width:auto;color:#d97706;font-weight:700">Medio</span>
+  </div>
+  <br>
+  <a class="info-link" href="https://finance.yahoo.com/quote/WMT" target="_blank">🔗 Yahoo Finance – WMT</a>
+  <a class="info-link" href="https://stock.walmart.com/investors" target="_blank" style="margin-left:6px">🔗 Walmart – Inversores</a>
+</div>
+
+<!-- GOOGL CEDEAR -->
+<div class="info-card">
+  <h3>
+    <span class="pill arsp">ARS→USD</span>
+    GOOGL CEDEAR — Alphabet Inc. (Google)
+  </h3>
+  <div class="sub">
+    <span class="pill greyp">CEDEAR – Acción individual</span>
+    <span class="pill purp">Tecnología</span>
+  </div>
+  <p><b>¿Qué es en simple?</b> Comprás en pesos una fracción de Alphabet, la empresa dueña de Google, YouTube, Android, Google Cloud y más. Una de las empresas más grandes del mundo por capitalización.</p>
+  <p><b>¿Le prestás a alguien?</b> No. Sos accionista. Si Google crece, tu inversión crece.</p>
+  <p><b>¿Paga dividendos?</b> <span class="pill warnp">Recientemente sí 🆕</span> Alphabet empezó a pagar dividendos en <b>2024</b> por primera vez en su historia. Son pequeños (~0.4–0.5% anual en USD), pagados trimestralmente. Los recibís en ARS. La empresa prioriza la recompra de acciones antes que los dividendos.</p>
+  <div class="info-divider"></div>
+  <div class="row">
+    <span class="info-badge ib-blue">📈 Cobertura USD</span>
+    <span class="info-badge ib-amber">Dividendos desde 2024 (pequeños)</span>
+    <span class="info-badge ib-red">Mayor volatilidad que consumo básico</span>
+  </div>
+  <div class="riesgo-bar">
+    <span>Riesgo</span>
+    <div class="riesgo-dots"><i class="on-low"></i><i class="on-med"></i><i class="on-med"></i><i class="on-hi"></i><i></i></div>
+    <span style="width:auto;color:#d97706;font-weight:700">Medio-alto</span>
+  </div>
+  <br>
+  <a class="info-link" href="https://finance.yahoo.com/quote/GOOGL" target="_blank">🔗 Yahoo Finance – GOOGL</a>
+  <a class="info-link" href="https://abc.xyz/investor/" target="_blank" style="margin-left:6px">🔗 Alphabet – Inversores</a>
+</div>
+
+<!-- KO CEDEAR -->
+<div class="info-card">
+  <h3>
+    <span class="pill arsp">ARS→USD</span>
+    KO CEDEAR — The Coca-Cola Company
+  </h3>
+  <div class="sub">
+    <span class="pill greyp">CEDEAR – Acción individual</span>
+    <span class="pill purp">Consumo defensivo</span>
+  </div>
+  <p><b>¿Qué es en simple?</b> Comprás en pesos una fracción de Coca-Cola. Es la empresa de bebidas más reconocida del mundo y uno de los activos más "aburridos y estables" que existen. Warren Buffett la tiene hace décadas.</p>
+  <p><b>¿Le prestás a alguien?</b> No. Sos accionista. Coca-Cola genera caja consistente vendiendo sus bebidas en todo el mundo.</p>
+  <p><b>¿Paga dividendos?</b> <span class="pill ok">Sí, en ARS 💵 — y mucho</span> Coca-Cola tiene uno de los mejores historiales de dividendos del mundo: <b>62+ años consecutivos aumentando el dividendo</b>. Paga <b>4 veces por año</b>. Rendimiento histórico ~3–3.5% anual en USD. Los recibís en ARS al tipo de cambio del momento.</p>
+  <div class="info-divider"></div>
+  <div class="row">
+    <span class="info-badge ib-blue">📈 Cobertura USD</span>
+    <span class="info-badge ib-green">Dividendos trimestrales ~3% anual en USD</span>
+    <span class="info-badge ib-green">62+ años subiendo dividendo</span>
+    <span class="info-badge ib-green">Empresa muy estable</span>
+  </div>
+  <div class="riesgo-bar">
+    <span>Riesgo</span>
+    <div class="riesgo-dots"><i class="on-low"></i><i class="on-med"></i><i></i><i></i><i></i></div>
+    <span style="width:auto;color:#16a34a;font-weight:700">Bajo-medio</span>
+  </div>
+  <br>
+  <a class="info-link" href="https://finance.yahoo.com/quote/KO" target="_blank">🔗 Yahoo Finance – KO</a>
+  <a class="info-link" href="https://investors.coca-colacompany.com" target="_blank" style="margin-left:6px">🔗 Coca-Cola – Inversores</a>
+</div>
+
+</section>
+
+<!-- CONFIG -->
+<section id="config" class="tab">
+
+  <!-- ☁ Sincronización en la nube -->
+  <div class="card">
+    <h2>☁ Sincronización en la nube (JSONBin.io)</h2>
+
+    <!-- Estado actual -->
+    <div id="cloudStatusBadge" style="margin-bottom:12px"></div>
+
+    <!-- Instrucciones colapsables -->
+    <details style="margin-bottom:14px;font-size:11px;color:var(--text)">
+      <summary style="cursor:pointer;font-weight:700;color:var(--blue);font-size:11px">
+        📖 Cómo configurarlo (2 minutos, gratis)
+      </summary>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid var(--line)">
+        <p><b>Paso 1 — Crear cuenta en JSONBin:</b><br>
+          Entrá a <a href="https://jsonbin.io" target="_blank" style="color:var(--blue)">jsonbin.io</a> → Sign Up (gratis, solo email).</p>
+        <p><b>Paso 2 — Crear un bin:</b><br>
+          Click "Create Bin" → pegá <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">{}</code> como contenido → Save.<br>
+          Copiá el <b>BIN ID</b> que aparece en la URL (ej: <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">64abc123def456</code>).</p>
+        <p><b>Paso 3 — Obtener tu API Key:</b><br>
+          En tu perfil (arriba a la derecha) → API Keys → copiá la <b>Master Key</b>.<br>
+          Empieza con <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">$2a$10$...</code></p>
+        <p><b>Paso 4 — Pegar acá:</b><br>
+          Ingresá los dos valores abajo y click "Conectar y sincronizar". ¡Listo!</p>
+        <p style="color:var(--muted)">🔒 Tus datos quedan en tu bin privado. Solo quien tenga tu Master Key puede acceder.</p>
+
+        <div style="margin-top:4px;padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+          <b>Para publicar la app en internet (Netlify):</b>
+          <ol style="margin:6px 0 0 16px;line-height:1.8">
+            <li>Entrá a <a href="https://netlify.com" target="_blank" style="color:var(--blue)">netlify.com</a> → Sign Up gratis</li>
+            <li>Arrastrá el archivo <b>inversiones_dani_v6.html</b> a la zona de deploy</li>
+            <li>Netlify te da una URL tipo <code style="background:#e2e8f0;padding:1px 5px;border-radius:3px">tuapp.netlify.app</code></li>
+            <li>Abrís esa URL desde cualquier dispositivo y los datos se sincronizan via JSONBin</li>
+          </ol>
+        </div>
+      </div>
+    </details>
+
+    <!-- Inputs de credenciales -->
+    <div class="grid grid-2" style="margin-bottom:10px">
+      <div>
+        <label class="lbl">Bin ID <span style="color:var(--muted);font-weight:400">(de jsonbin.io)</span></label>
+        <input id="cfgBinId" type="text" placeholder="64abc123def456..."
+          style="font-family:monospace;font-size:11px"
+          oninput="localStorage.setItem('jb_bin',this.value)">
+      </div>
+      <div>
+        <label class="lbl">Master Key <span style="color:var(--muted);font-weight:400">(empieza con $2a$...)</span></label>
+        <input id="cfgBinKey" type="password" placeholder="$2a$10$..."
+          style="font-family:monospace;font-size:11px"
+          oninput="localStorage.setItem('jb_key',this.value)">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary btn-xs" onclick="connectCloud()">☁ Conectar y sincronizar</button>
+      <button class="btn secondary btn-xs" onclick="saveToCloud(true)">⬆ Subir datos ahora</button>
+      <button class="btn secondary btn-xs" onclick="loadFromCloud(true)">⬇ Descargar datos ahora</button>
+    </div>
+    <div id="cloudMsg" style="margin-top:8px;font-size:10.5px"></div>
+  </div>
+
+  <!-- Persistencia local -->
+  <div class="card">
+    <h2>💾 Datos locales</h2>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:10px">Los datos también se guardan en este navegador como respaldo.</p>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn primary btn-xs" onclick="saveNow()">💾 Guardar local</button>
+      <button class="btn secondary btn-xs" onclick="exportJSON()">⬇ Exportar JSON</button>
+      <button class="btn secondary btn-xs" onclick="importJSONPrompt()">⬆ Importar JSON</button>
+      <button class="btn danger btn-xs" onclick="resetConfirm()">⚠ Resetear demo</button>
+    </div>
+    <div id="storageInfo" style="margin-top:10px;font-size:10.5px;color:var(--muted)"></div>
+  </div>
+
+  <div class="card">
+    <h2>Fecha de referencia para costo oportunidad</h2>
+    <div style="display:flex;align-items:center;gap:10px">
+      <input type="date" id="fechaRef" style="max-width:160px" oninput="debounceRecalc()">
+      <span style="font-size:11px;color:var(--muted)">Usada para calcular los meses transcurridos en costo oportunidad.</span>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<!-- Popup Liquidez -->
+<div id="liqPopup" style="display:none;position:fixed;z-index:2000;background:white;border:1px solid var(--line);border-radius:12px;padding:14px;min-width:240px;max-width:320px;box-shadow:0 8px 28px rgba(0,0,0,.14)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <b id="liqPopupTitle" style="font-size:12px"></b>
+    <button onclick="document.getElementById('liqPopup').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);line-height:1">✕</button>
+  </div>
+  <div id="liqPopupBody"></div>
+</div>
+
+<script>
+// ─── CONSTANTS ─────────────────────────────────────────────────────────────
+const MONTHS = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
+const ML = {"01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic"};
+function fMonth(m){ return ML[m.slice(5)]+"."+m.slice(2,4); }
+
+const PALETTE = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ef4444","#06b6d4","#ec4899","#84cc16","#f97316","#6366f1","#14b8a6","#a78bfa","#fb923c"];
+const GRUPO_COLORS = {"Ahorro previo":"#dbeafe","Inversión Balanz":"#dcfce7","Otro":"#fef9c3"};
+const TIPO_COLORS = {"FCI USD":"#dbeafe","FCI ARS":"#dcfce7","ON USD":"#fef3c7","CEDEAR":"#ede9fe","Acciones":"#fee2e2","Crypto":"#fce7f3","Plazo fijo":"#f0fdf4","Otro":"#f1f5f9"};
+
+// ─── DEFAULTS ──────────────────────────────────────────────────────────────
+const DEFAULTS = {
+  params:{ mep:1458.42, cable:1511.28, benchUsd:2.5, benchArs:2.5, benchCedear:8.0, fechaRef:"2026-06-07" },
+  mepHistory:{
+    "2026-01":1055, "2026-02":1120, "2026-03":1195,
+    "2026-04":1320, "2026-05":1415, "2026-06":1458,
+    "2026-07":null,"2026-08":null,"2026-09":null,"2026-10":null,"2026-11":null,"2026-12":null
+  },
+  buckets:[
+    {id:"b1",nombre:"MP",grupo:"Ahorro previo",moneda:"USD",objetivo:"Ahorro previo",saldoInicial:13242,notas:"MP USD"},
+    {id:"b2",nombre:"Santander",grupo:"Ahorro previo",moneda:"USD",objetivo:"Ahorro previo",saldoInicial:5983,notas:""},
+    {id:"b3",nombre:"Efectivo",grupo:"Ahorro previo",moneda:"USD",objetivo:"Ahorro previo",saldoInicial:3370,notas:"Caja física"},
+    {id:"b4",nombre:"Depósito alquiler",grupo:"Ahorro previo",moneda:"USD",objetivo:"Garantía",saldoInicial:800,notas:"No disponible"},
+    {id:"b5",nombre:"Caja papá",grupo:"Ahorro previo",moneda:"USD",objetivo:"Ahorro previo",saldoInicial:8550,notas:""},
+    {id:"b6",nombre:"FCI ESTRA1A - Dólar Corto Plazo",grupo:"Inversión Balanz",moneda:"USD",objetivo:"Viaje",saldoInicial:0,notas:"Balanz Estrategia USD"},
+    {id:"b7",nombre:"Pampa ON",grupo:"Inversión Balanz",moneda:"USD",objetivo:"Casa",saldoInicial:0,notas:"MGCTO"},
+    {id:"b8",nombre:"A. Crédito Privado XIV",grupo:"Inversión Balanz",moneda:"ARS",objetivo:"Casamiento",saldoInicial:0,notas:"FCI ARS"},
+    {id:"b9",nombre:"B. Balanz Ahorro BCAHA",grupo:"Inversión Balanz",moneda:"ARS",objetivo:"Casamiento",saldoInicial:0,notas:"FCI ARS"},
+    {id:"b10",nombre:"SPY",grupo:"Inversión Balanz",moneda:"ARS",objetivo:"Auto",saldoInicial:0,notas:"CEDEAR"},
+    {id:"b11",nombre:"WMT",grupo:"Inversión Balanz",moneda:"ARS",objetivo:"Auto",saldoInicial:0,notas:"CEDEAR"},
+    {id:"b12",nombre:"GOOGL",grupo:"Inversión Balanz",moneda:"ARS",objetivo:"Auto",saldoInicial:0,notas:"CEDEAR"},
+    {id:"b13",nombre:"KO",grupo:"Inversión Balanz",moneda:"ARS",objetivo:"Auto",saldoInicial:0,notas:"CEDEAR"},
+  ],
+  movimientos:[
+    {id:"m1",fecha:"2026-01-02",bucket:"MP",moneda:"USD",tipo:"Aporte",monto:1000,instrumento:"MP USD",archivo:"financial_performance_usd.pdf",notas:"Suscripción"},
+    {id:"m2",fecha:"2026-02-02",bucket:"MP",moneda:"USD",tipo:"Aporte",monto:800,instrumento:"MP USD",archivo:"financial_performance_usd.pdf",notas:"Suscripción"},
+    {id:"m3",fecha:"2026-03-27",bucket:"MP",moneda:"USD",tipo:"Venta/Rescate",monto:-10000,instrumento:"MP USD",archivo:"financial_performance_usd.pdf",notas:"Rescate para Balanz"},
+    {id:"m4",fecha:"2026-03-27",bucket:"FCI ESTRA1A - Dólar Corto Plazo",moneda:"USD",tipo:"Compra",monto:10000,instrumento:"ESTRA1A",archivo:"ResumenFCI_859478_20260607192111.pdf",notas:"Suscripción Balanz"},
+    {id:"m5",fecha:"2026-03-30",bucket:"Pampa ON",moneda:"USD",tipo:"Compra",monto:2010,instrumento:"MGCTO",archivo:"ResumenEstadodeCuenta_Marzo 2026.pdf",notas:"Compra ON"},
+    {id:"m6",fecha:"2026-04-08",bucket:"A. Crédito Privado XIV",moneda:"ARS",tipo:"Compra",monto:2500000,instrumento:"Crédito Privado XIV",archivo:"ResumenFCI_859478_20260607192144.pdf",notas:"Suscripción FCI"},
+    {id:"m7",fecha:"2026-04-08",bucket:"B. Balanz Ahorro BCAHA",moneda:"ARS",tipo:"Compra",monto:2500000,instrumento:"BCAHA",archivo:"ResumenFCI_859478_20260607192144.pdf",notas:"Suscripción FCI"},
+    {id:"m8",fecha:"2026-04-08",bucket:"SPY",moneda:"ARS",tipo:"Compra",monto:1203638.32,instrumento:"SPY CEDEAR",archivo:"ResumenEstadodeCuenta_Abril 2026.pdf",notas:"Compra neta"},
+    {id:"m9",fecha:"2026-04-08",bucket:"WMT",moneda:"ARS",tipo:"Compra",monto:1227949.98,instrumento:"WMT CEDEAR",archivo:"ResumenEstadodeCuenta_Abril 2026.pdf",notas:"Compra neta"},
+    {id:"m10",fecha:"2026-04-08",bucket:"GOOGL",moneda:"ARS",tipo:"Compra",monto:1232796.22,instrumento:"GOOGL CEDEAR",archivo:"ResumenEstadodeCuenta_Abril 2026.pdf",notas:"Compra neta"},
+    {id:"m11",fecha:"2026-04-08",bucket:"KO",moneda:"ARS",tipo:"Compra",monto:1232474.48,instrumento:"KO CEDEAR",archivo:"ResumenEstadodeCuenta_Abril 2026.pdf",notas:"Compra neta"},
+    {id:"m12",fecha:"2026-05-31",bucket:"FCI ESTRA1A - Dólar Corto Plazo",moneda:"USD",tipo:"Rendimiento",monto:18,instrumento:"ESTRA1A",archivo:"ResumenFCI_859478_20260607192216.pdf",notas:"Abril/mayo"},
+    {id:"m13",fecha:"2026-05-31",bucket:"Pampa ON",moneda:"USD",tipo:"Ajuste valuación",monto:17,instrumento:"MGCTO",archivo:"ResumenDeCuenta_20260607.pdf",notas:"Valuación vs inicial"},
+    {id:"m14",fecha:"2026-06-05",bucket:"FCI ESTRA1A - Dólar Corto Plazo",moneda:"USD",tipo:"Rendimiento",monto:19,instrumento:"ESTRA1A",archivo:"ResumenDeCuenta_20260607.pdf",notas:"Valor actual 10070"},
+    {id:"m15",fecha:"2026-06-05",bucket:"A. Crédito Privado XIV",moneda:"ARS",tipo:"Rendimiento",monto:106105,instrumento:"Crédito Privado XIV",archivo:"ResumenDeCuenta_20260607.pdf",notas:"Rendimiento acum."},
+    {id:"m16",fecha:"2026-06-05",bucket:"B. Balanz Ahorro BCAHA",moneda:"ARS",tipo:"Rendimiento",monto:115538,instrumento:"BCAHA",archivo:"ResumenDeCuenta_20260607.pdf",notas:"Rendimiento acum."},
+    {id:"m17",fecha:"2026-06-05",bucket:"SPY",moneda:"ARS",tipo:"Ajuste valuación",monto:143520,instrumento:"SPY CEDEAR",archivo:"ResumenDeCuenta_20260607.pdf",notas:"Ganancia valuación"},
+    {id:"m18",fecha:"2026-06-05",bucket:"WMT",moneda:"ARS",tipo:"Ajuste valuación",monto:-40402,instrumento:"WMT CEDEAR",archivo:"ResumenDeCuenta_20260607.pdf",notas:"Pérdida valuación"},
+    {id:"m19",fecha:"2026-06-05",bucket:"GOOGL",moneda:"ARS",tipo:"Ajuste valuación",monto:219705,instrumento:"GOOGL CEDEAR",archivo:"ResumenDeCuenta_20260607.pdf",notas:"Ganancia valuación"},
+    {id:"m20",fecha:"2026-06-05",bucket:"KO",moneda:"ARS",tipo:"Ajuste valuación",monto:75060,instrumento:"KO CEDEAR",archivo:"ResumenDeCuenta_20260607.pdf",notas:"Ganancia valuación"},
+    {id:"m21",fecha:"2026-05-15",bucket:"MP",moneda:"USD",tipo:"Compra",monto:1000,instrumento:"MP USD",archivo:"manual",notas:"Compra mayo 2026"},
+  ],
+  instrumentos:[
+    {id:"i1",nombre:"ESTRA1A - Balanz Estrategia USD",bucket:"FCI ESTRA1A - Dólar Corto Plazo",tipo:"FCI USD",moneda:"USD",fecha:"2026-03-27",inicial:10000,actual:10070,benchmark:"USD conservador"},
+    {id:"i2",nombre:"MGCTO - ON Pampa",bucket:"Pampa ON",tipo:"ON USD",moneda:"USD",fecha:"2026-03-30",inicial:2008,actual:2017,benchmark:"USD conservador"},
+    {id:"i3",nombre:"BCAHA - Balanz Ahorro",bucket:"B. Balanz Ahorro BCAHA",tipo:"FCI ARS",moneda:"ARS",fecha:"2026-04-08",inicial:2500000,actual:2615538,benchmark:"ARS money market"},
+    {id:"i4",nombre:"Crédito Privado XIV",bucket:"A. Crédito Privado XIV",tipo:"FCI ARS",moneda:"ARS",fecha:"2026-04-08",inicial:2500000,actual:2606105,benchmark:"ARS money market"},
+    {id:"i5",nombre:"SPY CEDEAR",bucket:"SPY",tipo:"CEDEAR",moneda:"ARS",fecha:"2026-04-08",inicial:1203638.32,actual:1340640,benchmark:"SPY/CEDEAR"},
+    {id:"i6",nombre:"WMT CEDEAR",bucket:"WMT",tipo:"CEDEAR",moneda:"ARS",fecha:"2026-04-08",inicial:1227949.98,actual:1179410,benchmark:"SPY/CEDEAR"},
+    {id:"i7",nombre:"GOOGL CEDEAR",bucket:"GOOGL",tipo:"CEDEAR",moneda:"ARS",fecha:"2026-04-08",inicial:1232796.22,actual:1445825,benchmark:"SPY/CEDEAR"},
+    {id:"i8",nombre:"KO CEDEAR",bucket:"KO",tipo:"CEDEAR",moneda:"ARS",fecha:"2026-04-08",inicial:1232474.48,actual:1300860,benchmark:"SPY/CEDEAR"},
+  ],
+  objetivos:[
+    {id:"o1",nombre:"Viaje Indonesia 2026",moneda:"USD",target:10000,fecha:"2026-10",status:"Activo",notas:"ESTRA1A",buckets:["FCI ESTRA1A - Dólar Corto Plazo"]},
+    {id:"o2",nombre:"Casamiento 2026",moneda:"ARS",target:5777000,fecha:"2026-10",status:"Activo",notas:"FCI ARS",buckets:["A. Crédito Privado XIV","B. Balanz Ahorro BCAHA"]},
+    {id:"o3",nombre:"Auto 2027",moneda:"USD",target:13000,fecha:"2027-04",status:"Activo",notas:"CEDEARs",buckets:["SPY","WMT","GOOGL","KO"]},
+    {id:"o4",nombre:"Casa",moneda:"USD",target:80000,fecha:"2029-04",status:"Activo",notas:"Ajustar target",buckets:["Pampa ON"]},
+  ],
+  objetivosHist:[], uploads:[],
+};
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let S = JSON.parse(localStorage.getItem("dani_inv_v5")||"null") || structuredClone(DEFAULTS);
+if (!S.mepHistory) S.mepHistory = structuredClone(DEFAULTS.mepHistory);
+
+let _saveTimer=null, _recalcTimer=null, _idCtr=Date.now();
+let evolCurrency = "USD", evolView = "total";
+let _grafMoneda = "USD", _objMode = "pct";
+let _flujoUsdEq = true;
+let _ingresosMoneda = "USD";
+
+function uid(){ return "id"+(++_idCtr); }
+
+// ─── PARAMS ────────────────────────────────────────────────────────────────
+function _getVal(id, fallback){
+  const el = document.getElementById(id);
+  return el ? (+el.value || fallback) : fallback;
+}
+function _getStr(id, fallback){
+  const el = document.getElementById(id);
+  return (el && el.value) ? el.value : fallback;
+}
+function P(){
+  return {
+    mep:        _getVal("mep",         S.params.mep),
+    benchUsd:   _getVal("benchUsd",    S.params.benchUsd)   / 100,
+    benchArs:   _getVal("benchArs",    S.params.benchArs)   / 100,
+    benchCedear:_getVal("benchCedear", S.params.benchCedear)/ 100,
+    fechaRef:   _getStr("fechaRef",    S.params.fechaRef || "2026-06-07"),
+  };
+}
+function getMep(month){
+  const v = S.mepHistory[month];
+  return (v && v > 0) ? v : P().mep;
+}
+function syncParamsToDOM(){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
+  set("mep",          S.params.mep);
+  set("cable",        S.params.cable);
+  set("benchUsd",     S.params.benchUsd);
+  set("benchArs",     S.params.benchArs);
+  set("benchCedear",  S.params.benchCedear);
+  set("fechaRef",     S.params.fechaRef||"2026-06-07");
+  // también los inputs visibles del panel compacto
+  set("mepVis",         S.params.mep);
+  set("benchUsdVis",    S.params.benchUsd);
+  set("benchArsVis",    S.params.benchArs);
+  set("benchCedearVis", S.params.benchCedear);
+}
+
+// ─── PRIVACY MODE ──────────────────────────────────────────────────────────
+let _privacyMode = false;
+function togglePrivacy(){
+  _privacyMode = !_privacyMode;
+  const btn = document.getElementById("btnPrivacy");
+  btn.textContent = _privacyMode ? '🙈' : '👁';
+  btn.style.background = _privacyMode ? '#ffffff25' : 'transparent';
+  btn.style.border     = _privacyMode ? '1px solid #fff' : '1px solid #ffffff30';
+  recalc();
+}
+
+// ─── FORMAT ────────────────────────────────────────────────────────────────
+const _MASK = '••••';
+function fARS(x){ return _privacyMode ? `$ ${_MASK}` : "$ "+(+(x||0)).toLocaleString("es-AR",{maximumFractionDigits:0}); }
+function fUSD(x){ return _privacyMode ? `u$s ${_MASK}` : "u$s "+(+(x||0)).toLocaleString("es-AR",{maximumFractionDigits:0}); }
+function fNum(x,dec=0){ return _privacyMode ? _MASK : (+(x||0)).toLocaleString("es-AR",{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function fPct(x){ return _privacyMode ? `${_MASK}%` : ((+(x||0))*100).toLocaleString("es-AR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"; }
+function mOf(d){ return (d||"").slice(0,7); }
+
+// ─── CALC ──────────────────────────────────────────────────────────────────
+function bucketSaldo(nombre){
+  const b = S.buckets.find(x=>x.nombre===nombre);
+  return +(b?.saldoInicial||0) + S.movimientos.filter(m=>m.bucket===nombre).reduce((a,m)=>a+(+m.monto||0),0);
+}
+function bucketMon(nombre){ return S.buckets.find(x=>x.nombre===nombre)?.moneda||"USD"; }
+function bucketUsd(nombre){
+  const s=bucketSaldo(nombre);
+  return bucketMon(nombre)==="USD" ? s : s/P().mep;
+}
+function instUsd(i){ return i.moneda==="USD" ? +i.actual : +i.actual/P().mep; }
+function msSince(d){
+  if(!d) return 0.1;
+  const ref=new Date(P().fechaRef), from=new Date(d);
+  return Math.max(0.1,(ref-from)/(1000*60*60*24*30.4375));
+}
+function benchVal(i){
+  const p=P(), m=msSince(i.fecha);
+  let rm;
+  if(i.benchmark==="SPY/CEDEAR") rm=Math.pow(1+p.benchCedear,1/12)-1;
+  else if(i.benchmark==="ARS money market") rm=p.benchArs;
+  else rm=Math.pow(1+p.benchUsd,1/12)-1;
+  return +(i.inicial||0)*Math.pow(1+rm,m);
+}
+function objActual(o){
+  const p=P();
+  return (o.buckets||[]).reduce((a,b)=>{
+    const u=bucketUsd(b);
+    return a+(o.moneda==="USD" ? u : u*p.mep);
+  },0);
+}
+function portfolioAtMonth(month, currency){
+  const mep = getMep(month);
+  let usdVal = 0;
+  S.buckets.forEach(b => {
+    const saldo = +(b.saldoInicial||0) + S.movimientos.filter(m=>m.bucket===b.nombre && mOf(m.fecha)<=month).reduce((a,m)=>a+(+m.monto||0),0);
+    usdVal += b.moneda==="USD" ? saldo : saldo/mep;
+  });
+  return currency==="ARS" ? usdVal*mep : usdVal;
+}
+function bucketAtMonth(bNombre, month, currency){
+  const b = S.buckets.find(x=>x.nombre===bNombre);
+  if(!b) return 0;
+  const mep = getMep(month);
+  const saldo = +(b.saldoInicial||0) + S.movimientos.filter(m=>m.bucket===bNombre && mOf(m.fecha)<=month).reduce((a,m)=>a+(+m.monto||0),0);
+  const usd = b.moneda==="USD" ? saldo : saldo/mep;
+  return currency==="ARS" ? usd*mep : usd;
+}
+
+// ─── CLOUD SYNC (JSONBin.io) ───────────────────────────────────────────────
+function jbCredentials(){
+  const binId  = localStorage.getItem("jb_bin")  || "";
+  const binKey = localStorage.getItem("jb_key")  || "";
+  return { binId, binKey, ok: !!(binId && binKey) };
+}
+
+function setCloudInd(text, color){
+  const el = document.getElementById("cloudInd");
+  if(!el) return;
+  el.textContent = text;
+  el.style.color = color || "#8897b3";
+  el.style.display = text ? "inline" : "none";
+}
+
+function setCloudMsg(text, isError){
+  const el = document.getElementById("cloudMsg");
+  if(!el) return;
+  el.style.color = isError ? "#991b1b" : "#166534";
+  el.textContent = text;
+}
+
+function updateCloudStatusBadge(){
+  const el = document.getElementById("cloudStatusBadge");
+  if(!el) return;
+  const { ok } = jbCredentials();
+  el.innerHTML = ok
+    ? `<span class="pill ok">☁ Nube conectada — los datos se sincronizan automáticamente al guardar</span>`
+    : `<span class="pill warnp">⚠ Sin configurar — los datos solo se guardan en este navegador</span>`;
+  // también inicializar inputs con valores guardados
+  const bi = document.getElementById("cfgBinId");
+  const bk = document.getElementById("cfgBinKey");
+  if(bi) bi.value = localStorage.getItem("jb_bin") || "";
+  if(bk) bk.value = localStorage.getItem("jb_key") || "";
+}
+
+async function saveToCloud(manual){
+  const { binId, binKey, ok } = jbCredentials();
+  if(!ok){ if(manual) setCloudMsg("⚠ Configurá el Bin ID y Master Key primero.", true); return; }
+  setCloudInd("☁ Subiendo…", "#8897b3");
+  try{
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+      method: "PUT",
+      headers: { "Content-Type":"application/json", "X-Master-Key": binKey },
+      body: JSON.stringify(S),
+    });
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    setCloudInd("☁ Sincronizado", "#16a34a");
+    if(manual){ setCloudMsg("✅ Datos subidos correctamente a la nube."); updateCloudStatusBadge(); }
+    setTimeout(()=>setCloudInd("",""), 3000);
+  } catch(e){
+    setCloudInd("☁ Error", "#dc2626");
+    if(manual) setCloudMsg(`❌ Error al subir: ${e.message}. Verificá las credenciales.`, true);
+  }
+}
+
+async function loadFromCloud(manual){
+  const { binId, binKey, ok } = jbCredentials();
+  if(!ok){ if(manual) setCloudMsg("⚠ Configurá el Bin ID y Master Key primero.", true); return false; }
+  setCloudInd("☁ Descargando…", "#8897b3");
+  try{
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+      headers: { "X-Master-Key": binKey },
+    });
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    const data = d.record;
+    // Validar que tiene la estructura correcta
+    if(!data || !data.buckets){
+      if(manual) setCloudMsg("⚠ El bin no tiene datos válidos todavía. Subí tus datos primero.", true);
+      setCloudInd("","");
+      return false;
+    }
+    S = data;
+    if(!S.mepHistory) S.mepHistory = structuredClone(DEFAULTS.mepHistory);
+    // Guardar también localmente
+    localStorage.setItem("dani_inv_v5", JSON.stringify(S));
+    syncParamsToDOM(); fillSelects(); renderTcInputs(); initFlujoSelects(); recalc();
+    setCloudInd("☁ Sincronizado", "#16a34a");
+    if(manual) setCloudMsg("✅ Datos descargados de la nube correctamente.");
+    setTimeout(()=>setCloudInd("",""), 3000);
+    return true;
+  } catch(e){
+    setCloudInd("☁ Error", "#dc2626");
+    if(manual) setCloudMsg(`❌ Error al descargar: ${e.message}. Verificá las credenciales.`, true);
+    return false;
+  }
+}
+
+async function connectCloud(){
+  const binId  = (document.getElementById("cfgBinId")  || {}).value?.trim();
+  const binKey = (document.getElementById("cfgBinKey") || {}).value?.trim();
+  if(!binId || !binKey){ setCloudMsg("⚠ Completá ambos campos.", true); return; }
+  localStorage.setItem("jb_bin", binId);
+  localStorage.setItem("jb_key", binKey);
+  setCloudMsg("Probando conexión…");
+  const loaded = await loadFromCloud(false);
+  if(loaded){
+    setCloudMsg("✅ ¡Conectado! Datos descargados de la nube. De ahora en adelante cada guardado sincroniza automáticamente.");
+  } else {
+    // El bin puede estar vacío — subir datos actuales
+    await saveToCloud(false);
+    setCloudMsg("✅ ¡Conectado! Tus datos locales fueron subidos a la nube. Todo listo.");
+  }
+  updateCloudStatusBadge();
+}
+
+// ─── SAVE ──────────────────────────────────────────────────────────────────
+function saveNow(){
+  S.params = {
+    mep:        _getVal("mep",         S.params.mep),
+    cable:      _getVal("cable",       S.params.cable||1511.28),
+    benchUsd:   _getVal("benchUsd",    S.params.benchUsd),
+    benchArs:   _getVal("benchArs",    S.params.benchArs),
+    benchCedear:_getVal("benchCedear", S.params.benchCedear),
+    fechaRef:   _getStr("fechaRef",    S.params.fechaRef||"2026-06-07"),
+  };
+  localStorage.setItem("dani_inv_v5",JSON.stringify(S));
+  const t=new Date().toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});
+  document.getElementById("saveInd").textContent="Guardado "+t;
+  updateStorageInfo();
+  // Sincronizar con la nube si está configurada
+  saveToCloud(false);
+}
+function autoSave(){ clearTimeout(_saveTimer); _saveTimer=setTimeout(saveNow,1500); document.getElementById("saveInd").textContent="Guardando…"; }
+function debounceRecalc(){ clearTimeout(_recalcTimer); _recalcTimer=setTimeout(recalc,200); }
+function exportJSON(){
+  saveNow();
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="inversiones_dani_v6.json"; a.click();
+}
+function importJSONPrompt(){
+  const inp=document.createElement("input"); inp.type="file"; inp.accept=".json";
+  inp.onchange=e=>{
+    const r=new FileReader();
+    r.onload=ev=>{ try{ S=JSON.parse(ev.target.result); if(!S.mepHistory) S.mepHistory=structuredClone(DEFAULTS.mepHistory); syncParamsToDOM(); fillSelects(); renderTcInputs(); recalc(); saveNow(); alert("JSON importado."); }catch(err){ alert("Error: "+err.message); }};
+    r.readAsText(e.target.files[0]);
+  };
+  inp.click();
+}
+function resetConfirm(){ if(confirm("¿Resetear al demo inicial?")){ localStorage.removeItem("dani_inv_v5"); S=structuredClone(DEFAULTS); syncParamsToDOM(); fillSelects(); renderTcInputs(); recalc(); } }
+function updateStorageInfo(){
+  const kb=(new Blob([localStorage.getItem("dani_inv_v5")||""]).size/1024).toFixed(1);
+  document.getElementById("storageInfo").textContent=`${kb} KB usados · ${S.buckets.length} buckets · ${S.movimientos.length} movimientos · ${S.instrumentos.length} instrumentos`;
+}
+
+// Sincronizar inputs visibles del panel de parámetros compacto
+function syncVisParams(){
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val; };
+  set("mepVis",        S.params.mep);
+  set("benchUsdVis",   S.params.benchUsd);
+  set("benchArsVis",   S.params.benchArs);
+  set("benchCedearVis",S.params.benchCedear);
+}
+
+async function fetchMepVis(){
+  try{
+    const r=await fetch("https://dolarapi.com/v1/dolares/bolsa");
+    const d=await r.json();
+    if(d.venta){
+      document.getElementById("mep").value=d.venta;
+      const v=document.getElementById("mepVis"); if(v) v.value=d.venta;
+      debounceRecalc();
+    }
+  }catch(e){ alert("API falló. Ingresá el MEP manualmente."); }
+}
+
+// ─── MEP API ───────────────────────────────────────────────────────────────
+async function fetchMep(){
+  try{
+    const r=await fetch("https://dolarapi.com/v1/dolares/bolsa");
+    const d=await r.json();
+    if(d.venta){ document.getElementById("mep").value=d.venta; debounceRecalc(); alert("MEP actualizado: "+d.venta); }
+    else alert("No se encontró campo 'venta'.");
+  }catch(e){ alert("API falló. Ingresá el MEP manualmente."); }
+}
+
+// ─── SELECTS ───────────────────────────────────────────────────────────────
+function fillSelects(){
+  const names=S.buckets.map(b=>b.nombre);
+  const opts=names.map(n=>`<option>${n}</option>`).join("");
+  document.getElementById("movBucket").innerHTML=opts;
+  document.getElementById("instBucket").innerHTML=opts;
+  const fb=document.getElementById("filtroMovBucket");
+  const prev=fb.value;
+  fb.innerHTML=`<option value="">Todos los buckets</option>`+opts;
+  fb.value=prev;
+  const div=document.getElementById("objBucketsSelect");
+  div.innerHTML=names.map(n=>`<label style="display:flex;align-items:center;gap:4px;font-size:10.5px;cursor:pointer;background:#f1f5f9;border-radius:5px;padding:3px 7px"><input type="checkbox" value="${n}" style="width:auto"> ${n}</label>`).join("");
+}
+
+// ─── TC INPUTS ─────────────────────────────────────────────────────────────
+function renderTcInputs(){
+  const c=document.getElementById("tcInputs");
+  c.innerHTML=MONTHS.map(m=>`
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <span style="font-size:9.5px;color:var(--muted);font-weight:700">${fMonth(m)}</span>
+      <input type="number" value="${S.mepHistory[m]||''}" placeholder="—"
+        style="width:70px;text-align:center;font-size:11px;padding:4px 5px"
+        oninput="S.mepHistory['${m}']=this.value?+this.value:null;autoSave();debounceRecalc()">
+    </div>`).join("");
+}
+let tcVisible=false;
+function toggleTcEdit(){
+  tcVisible=!tcVisible;
+  document.getElementById("tcEditPanel").style.display=tcVisible?"block":"none";
+  document.getElementById("btnFlujoEdit").classList.toggle("on",tcVisible);
+}
+
+// ─── EVOLUTION CHART CONTROLS ──────────────────────────────────────────────
+function setEvolView(v){
+  evolView=v;
+  document.getElementById("btnEvolTotal").classList.toggle("on",v==="total");
+  document.getElementById("btnEvolStack").classList.toggle("on",v==="stacked");
+  drawChartEvol();
+}
+function setEvolCurrency(c){
+  evolCurrency=c;
+  document.getElementById("btnEvolUsd").classList.toggle("on",c==="USD");
+  document.getElementById("btnEvolArs").classList.toggle("on",c==="ARS");
+  drawChartEvol();
+}
+
+// ─── RENDER KPIs ───────────────────────────────────────────────────────────
+function renderKpis(){
+  const total=S.buckets.reduce((a,b)=>a+bucketUsd(b.nombre),0);
+  const bal=S.buckets.filter(b=>b.grupo==="Inversión Balanz").reduce((a,b)=>a+bucketUsd(b.nombre),0);
+  const prev=total-bal;
+  const rend=S.movimientos.filter(m=>["Rendimiento","Cupón","Dividendo"].includes(m.tipo)).reduce((a,m)=>a+(m.moneda==="USD"?+m.monto:+m.monto/P().mep),0);
+  const totalArs=total*P().mep;
+  document.getElementById("kpis").innerHTML=`
+    <div class="card kpi"><div class="label">Total estimado</div><div class="value">${fUSD(total)}</div><div class="note">${fARS(totalArs)}</div></div>
+    <div class="card kpi"><div class="label">Ahorros previos</div><div class="value">${fUSD(prev)}</div><div class="note">MP · Santander · Efectivo · Depósito · Papá</div></div>
+    <div class="card kpi"><div class="label">Inversiones Balanz</div><div class="value">${fUSD(bal)}</div><div class="note">FCI · ON · CEDEARs</div></div>
+    <div class="card kpi"><div class="label">Ingresos pasivos</div><div class="value">${fUSD(rend)}</div><div class="note">Rendim. + cupones + dividendos</div></div>
+    <div class="card kpi"><div class="label">MEP actual</div><div class="value">$ ${fNum(P().mep,2)}</div><div class="note"><button class="btn secondary btn-xs" onclick="fetchMep()">🔄 Actualizar</button></div></div>`;
+  // distribTitulo fue eliminado junto al Dashboard — no crash
+}
+
+// ─── FLUJO ─────────────────────────────────────────────────────────────────
+function toggleFlujoUsdEq(){
+  _flujoUsdEq = !_flujoUsdEq;
+  document.getElementById("btnFlujoUsdEq").classList.toggle("on", _flujoUsdEq);
+  renderFlujo();
+}
+
+function initFlujoSelects(){
+  const d = document.getElementById("flujoDesde");
+  const h = document.getElementById("flujoHasta");
+  if(!d || !h) return;
+  const opts = MONTHS.map(m=>`<option value="${m}">${fMonth(m)}</option>`).join("");
+  d.innerHTML = opts; d.value = MONTHS[0];
+  h.innerHTML = opts; h.value = MONTHS[MONTHS.length-1];
+}
+
+function renderFlujo(){
+  const desde = (document.getElementById("flujoDesde")||{}).value || MONTHS[0];
+  const hasta = (document.getElementById("flujoHasta")||{}).value || MONTHS[MONTHS.length-1];
+  const visMonths = MONTHS.filter(m => m >= desde && m <= hasta);
+
+  const usdBuckets = S.buckets.filter(b => b.moneda==="USD");
+  const arsBuckets = S.buckets.filter(b => b.moneda==="ARS");
+
+  // Celda de número: verde positivo, rojo negativo, "–" si cero
+  function numCell(v, cls=""){
+    if(v === 0 || v === null) return `<td class="num" style="color:var(--muted)">–</td>`;
+    const c = v > 0 ? "color:#16a34a" : "color:#dc2626";
+    return `<td class="num" style="${c}${cls}">${fNum(v)}</td>`;
+  }
+
+  // Fila de bucket individual
+  function bucketRow(b){
+    const acc = bucketSaldo(b.nombre);
+    const accDisp = _flujoUsdEq
+      ? `<b>${fUSD(bucketUsd(b.nombre))}</b>`
+      : `<b>${b.moneda==="USD" ? fUSD(acc) : fARS(acc)}</b>`;
+    const mvCells = visMonths.map(m => {
+      const v = S.movimientos.filter(x=>x.bucket===b.nombre&&mOf(x.fecha)===m).reduce((a,x)=>a+(+x.monto||0),0);
+      return numCell(v);
+    }).join("");
+    return `<tr class="flujo-row">
+      <td style="padding-left:20px;font-size:11px">${b.nombre}</td>
+      <td class="num">${accDisp}</td>
+      ${mvCells}
+    </tr>`;
+  }
+
+  // Fila de subtotal
+  function subtotalRow(label, list, moneda, cls){
+    const acc = list.reduce((a,b)=>a+bucketSaldo(b.nombre),0);
+    const accDisp = _flujoUsdEq
+      ? `<b>${fUSD(list.reduce((a,b)=>a+bucketUsd(b.nombre),0))}</b>`
+      : `<b>${moneda==="USD" ? fUSD(acc) : fARS(acc)}</b>`;
+    const mvCells = visMonths.map(m=>{
+      const v = list.reduce((a,b)=>a+S.movimientos.filter(x=>x.bucket===b.nombre&&mOf(x.fecha)===m).reduce((a2,x)=>a2+(+x.monto||0),0),0);
+      return numCell(v);
+    }).join("");
+    return `<tr class="${cls}"><td>${label}</td><td class="num">${accDisp}</td>${mvCells}</tr>`;
+  }
+
+  // ── Header ──────────────────────────────────────────────────────────────
+  const thead = `<thead><tr>
+    <th style="min-width:190px;position:sticky;left:0;z-index:3;background:var(--soft)">Bucket</th>
+    <th class="num" style="min-width:100px">Acumulado</th>
+    ${visMonths.map(m=>`<th class="num" style="min-width:72px">${fMonth(m)}</th>`).join("")}
+  </tr></thead>`;
+
+  let body = "<tbody>";
+
+  // ── BUCKETS USD ──────────────────────────────────────────────────────────
+  body += `<tr class="flujo-h1 flujo-h1-usd">
+    <td colspan="${visMonths.length+2}" style="padding:7px 12px">
+      <span style="display:inline-flex;align-items:center;gap:7px">
+        <span style="width:20px;height:20px;border-radius:50%;background:var(--fl-usd-txt);color:#fff;font-size:10px;font-weight:900;display:inline-flex;align-items:center;justify-content:center">$</span>
+        BUCKETS USD
+      </span>
+    </td>
+  </tr>`;
+  usdBuckets.forEach(b => { body += bucketRow(b); });
+  body += subtotalRow("Subtotal USD", usdBuckets, "USD", "flujo-sub1");
+
+  // ── BUCKETS ARS ──────────────────────────────────────────────────────────
+  body += `<tr class="flujo-h1 flujo-h1-ars">
+    <td colspan="${visMonths.length+2}" style="padding:7px 12px">
+      <span style="display:inline-flex;align-items:center;gap:7px">
+        <span style="width:20px;height:20px;border-radius:50%;background:var(--fl-ars-txt);color:#fff;font-size:10px;font-weight:900;display:inline-flex;align-items:center;justify-content:center">$</span>
+        BUCKETS ARS
+      </span>
+    </td>
+  </tr>`;
+  arsBuckets.forEach(b => { body += bucketRow(b); });
+  body += subtotalRow("Subtotal ARS", arsBuckets, "ARS", "flujo-sub1");
+
+  // ── TC ────────────────────────────────────────────────────────────────────
+  body += `<tr class="flujo-tc">
+    <td><i>TC (MEP cierre)</i></td>
+    <td class="num" style="color:var(--muted)">—</td>
+    ${visMonths.map(m=>{
+      const v = getMep(m);
+      return `<td class="num" style="color:var(--muted)">${S.mepHistory[m]?fNum(v):""}</td>`;
+    }).join("")}
+  </tr>`;
+
+  // ── TOTALES ───────────────────────────────────────────────────────────────
+  const totalUsdAccum = S.buckets.reduce((a,b)=>a+bucketUsd(b.nombre),0);
+  const totalUsdPerMonth = visMonths.map(m=>{
+    const tc = getMep(m);
+    return usdBuckets.reduce((a,b2)=>a+S.movimientos.filter(x=>x.bucket===b2.nombre&&x.moneda==="USD"&&mOf(x.fecha)===m).reduce((a2,x)=>a2+(+x.monto||0),0),0)
+         + arsBuckets.reduce((a,b2)=>a+S.movimientos.filter(x=>x.bucket===b2.nombre&&x.moneda==="ARS"&&mOf(x.fecha)===m).reduce((a2,x)=>a2+(+x.monto||0),0),0)/tc;
+  });
+
+  body += `<tr class="flujo-total">
+    <td>TOTAL USD EQUIVALENTE</td>
+    <td class="num"><b>${fUSD(totalUsdAccum)}</b></td>
+    ${totalUsdPerMonth.map(v=>{
+      if(!v) return `<td class="num" style="color:rgba(255,255,255,.4)">–</td>`;
+      const c = v>0?"color:#86efac":"color:#fca5a5";
+      return `<td class="num" style="${c}">${fNum(v,0)}</td>`;
+    }).join("")}
+  </tr>`;
+
+  const totalArsAccum = totalUsdAccum * P().mep;
+  body += `<tr class="flujo-total">
+    <td>TOTAL ARS EQUIVALENTE</td>
+    <td class="num"><b>${fARS(totalArsAccum)}</b></td>
+    ${totalUsdPerMonth.map((v,i)=>{
+      const ars = v * getMep(visMonths[i]);
+      if(!ars) return `<td class="num" style="color:rgba(255,255,255,.4)">–</td>`;
+      const c = ars>0?"color:#86efac":"color:#fca5a5";
+      return `<td class="num" style="${c}">${fNum(ars,0)}</td>`;
+    }).join("")}
+  </tr>`;
+
+  body += "</tbody>";
+  document.getElementById("tablaFlujo").innerHTML = thead + body;
+}
+
+// CSV download del flujo
+function downloadFlujoCSV(){
+  const desde = (document.getElementById("flujoDesde")||{}).value || MONTHS[0];
+  const hasta = (document.getElementById("flujoHasta")||{}).value || MONTHS[MONTHS.length-1];
+  const visMonths = MONTHS.filter(m => m >= desde && m <= hasta);
+  const rows = [["Bucket","Moneda","Acumulado",...visMonths.map(fMonth)]];
+  S.buckets.forEach(b=>{
+    const acc = bucketSaldo(b.nombre);
+    rows.push([b.nombre, b.moneda, acc, ...visMonths.map(m=>S.movimientos.filter(x=>x.bucket===b.nombre&&mOf(x.fecha)===m).reduce((a,x)=>a+(+x.monto||0),0))]);
+  });
+  const csv = rows.map(r=>r.map(c=>JSON.stringify(c)).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = "flujo_mensual.csv"; a.click();
+}
+
+// ─── MOVIMIENTOS ───────────────────────────────────────────────────────────
+function renderMovs(){
+  const fb    = document.getElementById("filtroMovBucket").value;
+  const ft    = document.getElementById("filtroMovTipo").value;
+  const desde = document.getElementById("filtroMovDesde").value;
+  const hasta = document.getElementById("filtroMovHasta").value;
+
+  let movs = [...S.movimientos];
+  if(fb)     movs = movs.filter(m => m.bucket === fb);
+  if(ft)     movs = movs.filter(m => m.tipo === ft);
+  if(desde)  movs = movs.filter(m => m.fecha >= desde);
+  if(hasta)  movs = movs.filter(m => m.fecha <= hasta);
+  movs.sort((a,b) => b.fecha.localeCompare(a.fecha));
+
+  document.getElementById("movCount").textContent = `(${movs.length} de ${S.movimientos.length})`;
+
+  const TIPO_BADGE = {"Aporte":"ok","Compra":"infop","Venta/Rescate":"badp","Rendimiento":"ok","Cupón":"ok","Dividendo":"ok","Ajuste valuación":"warnp"};
+
+  document.querySelector("#tablaMovimientos tbody").innerHTML = movs.map(m => {
+    const idx      = S.movimientos.indexOf(m);
+    const mc       = +m.monto > 0 ? "good" : +m.monto < 0 ? "bad" : "";
+    const monClass = m.moneda === "USD" ? "usdp" : "arsp";
+    const montoFmt = m.moneda === "USD" ? fUSD(m.monto) : fARS(m.monto);
+    const updFmt   = m.updatedAt ? `<span style="font-size:9px;color:var(--muted)">${m.updatedAt.slice(5)}</span>` : `<span style="font-size:9px;color:var(--muted)">—</span>`;
+
+    const buckOpts = S.buckets.map(b => `<option ${b.nombre===m.bucket?"selected":""}>${b.nombre}</option>`).join("");
+    const buckSel  = `<select class="pill-sel greyp" title="${m.bucket}"
+      onchange="S.movimientos[${idx}].bucket=this.value;touchMov(${idx});autoSave();debounceRecalc()"
+      style="max-width:120px">${buckOpts}</select>`;
+
+    const monSel = `<select class="pill-sel ${monClass}"
+      onchange="S.movimientos[${idx}].moneda=this.value;touchMov(${idx});autoSave();debounceRecalc();renderMovs()">
+      <option ${m.moneda==="USD"?"selected":""}>USD</option>
+      <option ${m.moneda==="ARS"?"selected":""}>ARS</option>
+    </select>`;
+
+    return `<tr>
+      <td class="left"><input class="ie" type="date" value="${m.fecha}" style="width:110px"
+        onchange="S.movimientos[${idx}].fecha=this.value;touchMov(${idx});autoSave();debounceRecalc()"></td>
+      <td>${buckSel}</td>
+      <td>${monSel}</td>
+      <td><span class="pill ${TIPO_BADGE[m.tipo]||'infop'}">${m.tipo}</span></td>
+      <td class="num ${mc}">
+        <span class="monto-txt ${mc}" onclick="startEditMonto(this)">${montoFmt}</span>
+        <input class="monto-inp ie" type="number" value="${m.monto}"
+          onblur="endEditMonto(this,${idx})"
+          onkeydown="if(event.key==='Enter')this.blur()">
+      </td>
+      <td class="left"><input class="ie" value="${m.instrumento||''}" style="width:100px"
+        onchange="S.movimientos[${idx}].instrumento=this.value;touchMov(${idx});autoSave()"></td>
+      <td class="left" title="${m.archivo||''}"><input class="ie" value="${m.archivo||''}" style="width:100px"
+        onchange="S.movimientos[${idx}].archivo=this.value;touchMov(${idx});autoSave()"></td>
+      <td class="left"><input class="ie" value="${m.notas||''}"
+        onchange="S.movimientos[${idx}].notas=this.value;touchMov(${idx});autoSave()"></td>
+      <td>${updFmt}</td>
+      <td><button class="btn danger btn-xs" onclick="delMov(${idx})">✕</button></td>
+    </tr>`;
+  }).join("");
+}
+
+// Monto click-to-edit helpers
+function startEditMonto(span){
+  span.style.display = 'none';
+  const inp = span.nextElementSibling;
+  inp.style.display = 'inline-block';
+  inp.focus(); inp.select();
+}
+function endEditMonto(inp, idx){
+  S.movimientos[idx].monto = +inp.value;
+  touchMov(idx);
+  autoSave(); debounceRecalc();
+  inp.style.display = 'none';
+  const span = inp.previousElementSibling;
+  const m = S.movimientos[idx];
+  const mc = +m.monto > 0 ? "good" : +m.monto < 0 ? "bad" : "";
+  span.className = `monto-txt ${mc}`;
+  span.textContent = m.moneda === "USD" ? fUSD(m.monto) : fARS(m.monto);
+  span.style.display = '';
+}
+
+// Marca fecha de actualización en un movimiento
+function touchMov(idx){
+  S.movimientos[idx].updatedAt = new Date().toISOString().slice(0,10);
+}
+
+// Flash 3s en pestañas cuando se registra un movimiento
+function flashTabDots(...tabIds){
+  tabIds.forEach(tabId => {
+    const btn = document.querySelector(`nav button[onclick*="'${tabId}'"]`);
+    if(!btn) return;
+    let dot = btn.querySelector('.tab-flash-dot');
+    if(!dot){
+      dot = document.createElement('span');
+      dot.className = 'tab-flash-dot';
+      btn.appendChild(dot);
+    }
+    dot.classList.add('on');
+    clearTimeout(dot._t);
+    dot._t = setTimeout(() => dot.classList.remove('on'), 3000);
+  });
+}
+
+// ── Deduplicación ───────────────────────────────────────────────────────────
+// Clave de identidad: fecha exacta + bucket + moneda + tipo + monto (±1 unidad)
+function isDuplicate(newMov, excludeIdx = -1){
+  return S.movimientos.some((m, i) => {
+    if(i === excludeIdx) return false;
+    return m.fecha   === newMov.fecha
+        && m.bucket  === newMov.bucket
+        && m.moneda  === newMov.moneda
+        && m.tipo    === newMov.tipo
+        && Math.abs((+m.monto||0) - (+newMov.monto||0)) <= 1;
+  });
+}
+
+// Devuelve pares de índices que son duplicados entre sí
+function findAllDuplicates(){
+  const pairs = [];
+  S.movimientos.forEach((m, i) => {
+    S.movimientos.forEach((n, j) => {
+      if(j <= i) return;
+      if(m.fecha === n.fecha && m.bucket === n.bucket && m.moneda === n.moneda
+         && m.tipo === n.tipo && Math.abs((+m.monto||0)-(+n.monto||0)) <= 1){
+        pairs.push([i, j]);
+      }
+    });
+  });
+  return pairs;
+}
+
+function addMovimiento(){
+  const fecha = document.getElementById("movFecha").value;
+  if(!fecha){ alert("Ingresá una fecha."); return; }
+
+  const newMov = {
+    fecha,
+    bucket: document.getElementById("movBucket").value,
+    moneda: document.getElementById("movMoneda").value,
+    tipo:   document.getElementById("movTipo").value,
+    monto:  +document.getElementById("movMonto").value,
+  };
+
+  // ── Guardia antiduplicate ──────────────────────────────────────────────
+  if(isDuplicate(newMov)){
+    const ok = confirm(
+      `⚠ Ya existe un movimiento muy similar:\n\n` +
+      `  Fecha: ${newMov.fecha}  |  Bucket: ${newMov.bucket}\n` +
+      `  Tipo: ${newMov.tipo}  |  Monto: ${newMov.moneda} ${newMov.monto}\n\n` +
+      `¿Querés cargarlo igual? (si es un error, cancelá)`
+    );
+    if(!ok) return;
+  }
+
+  S.movimientos.push({
+    id: uid(),
+    ...newMov,
+    instrumento: document.getElementById("movInstrumento").value,
+    archivo:     document.getElementById("movArchivo").value,
+    notas:       document.getElementById("movNotas").value,
+    updatedAt:   new Date().toISOString().slice(0,10),
+  });
+  ["movFecha","movMonto","movInstrumento","movArchivo","movNotas"].forEach(id => document.getElementById(id).value = "");
+  flashTabDots('movimientos','buckets','flujo');
+  autoSave(); recalc();
+}
+
+function delMov(idx){ if(!confirm("¿Eliminar movimiento?"))return; S.movimientos.splice(idx,1); autoSave(); recalc(); }
+
+// Verificación manual: resalta duplicados en la tabla con fondo amarillo
+function verificarDuplicados(){
+  const pairs = findAllDuplicates();
+  if(!pairs.length){
+    // Banner verde temporal
+    const banner = document.createElement("div");
+    banner.className = "notice";
+    banner.style.cssText = "background:#f0fdf4;border-color:#bbf7d0;color:#166534;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:999;min-width:300px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.12)";
+    banner.textContent = "✅ No se encontraron movimientos duplicados.";
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 3000);
+    return;
+  }
+
+  // Recopilar índices duplicados
+  const dupIdxs = new Set(pairs.flatMap(p => p));
+
+  // Marcar visualmente en la tabla (añadir clase a las filas)
+  const rows = document.querySelectorAll("#tablaMovimientos tbody tr");
+  rows.forEach(row => row.classList.remove("dup-row"));
+
+  // Reconstruimos el mapa: posición visible → índice real en S.movimientos
+  const fb    = document.getElementById("filtroMovBucket").value;
+  const ft    = document.getElementById("filtroMovTipo").value;
+  const desde = document.getElementById("filtroMovDesde").value;
+  const hasta = document.getElementById("filtroMovHasta").value;
+  let visMovs = [...S.movimientos];
+  if(fb)    visMovs = visMovs.filter(m=>m.bucket===fb);
+  if(ft)    visMovs = visMovs.filter(m=>m.tipo===ft);
+  if(desde) visMovs = visMovs.filter(m=>m.fecha>=desde);
+  if(hasta) visMovs = visMovs.filter(m=>m.fecha<=hasta);
+  visMovs.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+  rows.forEach((row, ri) => {
+    if(!visMovs[ri]) return;
+    const realIdx = S.movimientos.indexOf(visMovs[ri]);
+    if(dupIdxs.has(realIdx)) row.classList.add("dup-row");
+  });
+
+  // Banner de aviso
+  const banner = document.createElement("div");
+  banner.className = "notice";
+  banner.style.cssText = "background:#fffbeb;border-color:#fcd34d;color:#78350f;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:999;min-width:360px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.12)";
+  banner.innerHTML = `⚠ Se encontraron <b>${pairs.length}</b> par(es) de movimientos posiblemente duplicados — marcados en amarillo. Revisá y eliminá los que sobren.`;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 5000);
+}
+
+// ─── BUCKETS ───────────────────────────────────────────────────────────────
+function renderBuckets(){
+  document.querySelector("#tablaBuckets tbody").innerHTML=S.buckets.map((b,i)=>{
+    const saldo=bucketSaldo(b.nombre), usdEq=bucketUsd(b.nombre);
+    const grupoClass = b.grupo==="Inversión Balanz" ? "ok" : "greyp";
+    const monClass   = b.moneda==="USD" ? "usdp" : "arsp";
+
+    const grupoSel = `<select class="pill-sel ${grupoClass}"
+      onchange="S.buckets[${i}].grupo=this.value;autoSave()">
+      <option ${b.grupo==="Ahorro previo"?"selected":""}>Ahorro previo</option>
+      <option ${b.grupo==="Inversión Balanz"?"selected":""}>Inversión Balanz</option>
+      <option ${b.grupo==="Otro"?"selected":""}>Otro</option>
+    </select>`;
+
+    const monSel = `<select class="pill-sel ${monClass}"
+      onchange="S.buckets[${i}].moneda=this.value;autoSave();debounceRecalc()">
+      <option ${b.moneda==="USD"?"selected":""}>USD</option>
+      <option ${b.moneda==="ARS"?"selected":""}>ARS</option>
+    </select>`;
+
+    return `<tr>
+      <td class="left"><input class="ie" value="${b.nombre}" style="min-width:120px" onchange="S.buckets[${i}].nombre=this.value;fillSelects();autoSave();debounceRecalc()"></td>
+      <td>${grupoSel}</td>
+      <td>${monSel}</td>
+      <td><input class="ie" value="${b.objetivo||''}" style="width:90px" onchange="S.buckets[${i}].objetivo=this.value;autoSave()"></td>
+      <td class="num"><input class="ie" type="number" value="${b.saldoInicial}" style="width:90px;text-align:right" onchange="S.buckets[${i}].saldoInicial=+this.value;autoSave();debounceRecalc()"></td>
+      <td class="num"><b>${b.moneda==="USD"?fUSD(saldo):fARS(saldo)}</b></td>
+      <td class="num">${fUSD(usdEq)}</td>
+      <td class="left"><input class="ie" value="${b.notas||''}" onchange="S.buckets[${i}].notas=this.value;autoSave()"></td>
+      <td><button class="btn danger btn-xs" onclick="delBucket(${i})">✕</button></td>
+    </tr>`;
+  }).join("");
+}
+function addBucket(){
+  const nombre=document.getElementById("buckNombre").value.trim();
+  if(!nombre){alert("Ingresá un nombre.");return;}
+  S.buckets.push({id:uid(),nombre,grupo:document.getElementById("buckGrupo").value,moneda:document.getElementById("buckMoneda").value,objetivo:document.getElementById("buckObjetivo").value,saldoInicial:+document.getElementById("buckSaldo").value||0,notas:document.getElementById("buckNotas").value});
+  ["buckNombre","buckObjetivo","buckSaldo","buckNotas"].forEach(id=>document.getElementById(id).value="");
+  fillSelects(); autoSave(); recalc();
+}
+function delBucket(i){ if(!confirm(`¿Eliminar bucket "${S.buckets[i].nombre}"?`))return; S.buckets.splice(i,1); fillSelects(); autoSave(); recalc(); }
+
+// ─── INSTRUMENTOS ──────────────────────────────────────────────────────────
+function renderInstrumentos(){
+  document.querySelector("#tablaInstrumentos tbody").innerHTML=S.instrumentos.map((i,idx)=>{
+    const rend=i.inicial>0?(+i.actual-+i.inicial)/+i.inicial:0;
+    const rc=rend>0?"good":rend<0?"bad":"";
+    const tc=TIPO_COLORS[i.tipo]||"#f1f5f9";
+    const monClass = i.moneda==="USD"?"usdp":"arsp";
+
+    const monSel = `<select class="pill-sel ${monClass}"
+      onchange="S.instrumentos[${idx}].moneda=this.value;autoSave();debounceRecalc()">
+      <option ${i.moneda==="USD"?"selected":""}>USD</option>
+      <option ${i.moneda==="ARS"?"selected":""}>ARS</option>
+    </select>`;
+
+    return `<tr>
+      <td class="left"><input class="ie" value="${i.nombre}" style="min-width:130px" onchange="S.instrumentos[${idx}].nombre=this.value;autoSave()"></td>
+      <td><select class="pill-sel greyp" title="${i.bucket}" style="max-width:130px"
+        onchange="S.instrumentos[${idx}].bucket=this.value;autoSave()">${S.buckets.map(b=>`<option ${b.nombre===i.bucket?"selected":""}>${b.nombre}</option>`).join("")}</select></td>
+      <td><span class="pill infop" style="background:${tc};color:#334155">${i.tipo}</span></td>
+      <td>${monSel}</td>
+      <td><input class="ie" type="date" value="${i.fecha}" style="width:105px" onchange="S.instrumentos[${idx}].fecha=this.value;autoSave();debounceRecalc()"></td>
+      <td class="num"><input class="ie" type="number" value="${i.inicial}" style="width:100px;text-align:right" onchange="S.instrumentos[${idx}].inicial=+this.value;autoSave();debounceRecalc()"></td>
+      <td class="num"><input class="ie" type="number" value="${i.actual}" style="width:100px;text-align:right" onchange="S.instrumentos[${idx}].actual=+this.value;autoSave();debounceRecalc()"></td>
+      <td class="num">${fUSD(instUsd(i))}</td>
+      <td class="num ${rc}">${fPct(rend)}</td>
+      <td><select class="ie" style="width:120px;font-size:10.5px" onchange="S.instrumentos[${idx}].benchmark=this.value;autoSave();debounceRecalc()">
+        <option ${i.benchmark==="USD conservador"?"selected":""}>USD conservador</option>
+        <option ${i.benchmark==="ARS money market"?"selected":""}>ARS money market</option>
+        <option ${i.benchmark==="SPY/CEDEAR"?"selected":""}>SPY/CEDEAR</option>
+      </select></td>
+      <td><button class="btn danger btn-xs" onclick="delInst(${idx})">✕</button></td>
+    </tr>`;
+  }).join("");
+}
+function addInstrumento(){
+  const nombre=document.getElementById("instNombre").value.trim();
+  if(!nombre){alert("Ingresá un nombre.");return;}
+  const bucket=document.getElementById("instBucket").value;
+  S.instrumentos.push({id:uid(),nombre,bucket,tipo:document.getElementById("instTipo").value,moneda:document.getElementById("instMoneda").value,fecha:document.getElementById("instFecha").value,inicial:+document.getElementById("instInicial").value||0,actual:+document.getElementById("instActual").value||0,benchmark:document.getElementById("instBenchmark").value});
+  ["instNombre","instFecha","instInicial","instActual"].forEach(id=>document.getElementById(id).value="");
+  autoSave(); recalc();
+}
+function delInst(idx){ if(!confirm("¿Eliminar instrumento?"))return; S.instrumentos.splice(idx,1); autoSave(); recalc(); }
+
+// ─── COSTO OPORTUNIDAD ─────────────────────────────────────────────────────
+function renderOportunidad(){
+  document.querySelector("#tablaOportunidad tbody").innerHTML=S.instrumentos.map(i=>{
+    const bv=benchVal(i), diff=+i.actual-bv, ms=msSince(i.fecha).toFixed(1);
+    const tc=TIPO_COLORS[i.tipo]||"#f1f5f9";
+    return `<tr>
+      <td class="left"><b>${i.nombre}</b></td>
+      <td><span class="pill" style="background:${tc};color:#334155">${i.tipo}</span></td>
+      <td class="num">${i.moneda==="USD"?fUSD(i.inicial):fARS(i.inicial)}</td>
+      <td class="num">${i.moneda==="USD"?fUSD(i.actual):fARS(i.actual)}</td>
+      <td>${i.benchmark}</td>
+      <td class="num">${i.moneda==="USD"?fUSD(bv):fARS(bv)}</td>
+      <td class="num ${diff>=0?'good':'bad'}">${i.moneda==="USD"?fUSD(diff):fARS(diff)}</td>
+      <td>${ms}</td>
+      <td>${diff>=0?'<span class="pill ok">✓ Supera</span>':'<span class="pill badp">✗ Alternativa mejor</span>'}</td>
+    </tr>`;
+  }).join("");
+}
+
+// ─── OBJETIVOS ─────────────────────────────────────────────────────────────
+function renderObjetivos(){
+  document.querySelector("#tablaObjetivos tbody").innerHTML=S.objetivos.map((o,i)=>{
+    const act=objActual(o), av=o.target>0?act/o.target:0;
+    const avPct=Math.min(av*100,100);
+    const pClass=avPct>=100?"done":"";
+    const monClass = o.moneda==="USD"?"usdp":"arsp";
+    const monSel = `<select class="pill-sel ${monClass}"
+      onchange="S.objetivos[${i}].moneda=this.value;autoSave();debounceRecalc()">
+      <option ${o.moneda==="USD"?"selected":""}>USD</option>
+      <option ${o.moneda==="ARS"?"selected":""}>ARS</option>
+    </select>`;
+    return `<tr>
+      <td class="left" style="min-width:130px"><input class="ie" value="${o.nombre}" style="min-width:120px" onchange="S.objetivos[${i}].nombre=this.value;autoSave()"></td>
+      <td>${monSel}</td>
+      <td class="num"><input class="ie" type="number" value="${o.target}" style="width:90px;text-align:right" onchange="S.objetivos[${i}].target=+this.value;autoSave();debounceRecalc()"></td>
+      <td class="num"><b>${o.moneda==="USD"?fUSD(act):fARS(act)}</b></td>
+      <td style="min-width:130px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="progress-bar"><div class="progress-bar-fill ${pClass}" style="width:${avPct}%"></div></div>
+          <span style="font-size:10px;font-weight:700;white-space:nowrap;min-width:32px">${(av*100).toFixed(0)}%</span>
+        </div>
+      </td>
+      <td>
+        <input class="ie" type="month" value="${o.fecha}" style="width:110px" onchange="S.objetivos[${i}].fecha=this.value;autoSave()">
+        <div style="font-size:9px;color:var(--muted);margin-top:1px">${o.fecha?o.fecha.slice(5,7)+'/'+o.fecha.slice(2,4):''}</div>
+      </td>
+      <td style="max-width:160px">
+        <div style="display:flex;flex-wrap:wrap;gap:2px">
+          ${(o.buckets||[]).map(b=>`<span class="pill greyp" style="font-size:9px">${b.length>12?b.slice(0,12)+'…':b}</span>`).join("")}
+        </div>
+      </td>
+      <td><select class="ie" style="width:80px" onchange="S.objetivos[${i}].status=this.value;autoSave()">
+        <option ${o.status==="Activo"?"selected":""}>Activo</option>
+        <option ${o.status==="Done"?"selected":""}>Done</option>
+        <option ${o.status==="Pausado"?"selected":""}>Pausado</option>
+      </select></td>
+      <td class="left" style="max-width:120px"><input class="ie" value="${o.notas||''}" onchange="S.objetivos[${i}].notas=this.value;autoSave()"></td>
+      <td style="white-space:nowrap">
+        <button class="btn success btn-xs" onclick="archiveObj(${i})" title="Archivar">📁</button>
+        <button class="btn danger btn-xs" onclick="delObj(${i})" title="Eliminar">✕</button>
+      </td>
+    </tr>`;
+  }).join("");
+  document.querySelector("#tablaObjetivosHist tbody").innerHTML=S.objetivosHist.map(h=>`
+    <tr><td>${h.fecha}</td><td class="left">${h.nombre}</td><td class="num">${h.target}</td><td class="num">${h.actual}</td><td>${h.motivo}</td></tr>`).join("");
+}
+function addObjetivo(){
+  const nombre=document.getElementById("objNombre").value.trim();
+  if(!nombre){alert("Ingresá un nombre.");return;}
+  const bucks=[...document.querySelectorAll("#objBucketsSelect input:checked")].map(x=>x.value);
+  S.objetivos.push({id:uid(),nombre,moneda:document.getElementById("objMoneda").value,target:+document.getElementById("objTarget").value||0,fecha:document.getElementById("objFecha").value,status:"Activo",notas:document.getElementById("objNotas").value,buckets:bucks});
+  ["objNombre","objTarget","objFecha","objNotas"].forEach(id=>document.getElementById(id).value="");
+  document.querySelectorAll("#objBucketsSelect input").forEach(x=>x.checked=false);
+  autoSave(); recalc();
+}
+function archiveObj(i){ const o=S.objetivos.splice(i,1)[0]; S.objetivosHist.push({fecha:new Date().toISOString().slice(0,10),nombre:o.nombre,target:o.target,actual:objActual(o),motivo:o.status}); autoSave(); recalc(); }
+function delObj(i){ if(!confirm("¿Eliminar objetivo?"))return; S.objetivos.splice(i,1); autoSave(); recalc(); }
+
+// ─── IMPORTAR ──────────────────────────────────────────────────────────────
+// Mapa: ticker → datos del instrumento
+const TICKER_MAP = {
+  "ESTRA1A": {nombre:"ESTRA1A - Balanz Estrategia USD",bucket:"FCI ESTRA1A - Dólar Corto Plazo",tipo:"FCI USD",moneda:"USD",benchmark:"USD conservador"},
+  "BCAHA":   {nombre:"BCAHA - Balanz Ahorro",bucket:"B. Balanz Ahorro BCAHA",tipo:"FCI ARS",moneda:"ARS",benchmark:"ARS money market"},
+  "CPRIVADOA":{nombre:"Crédito Privado XIV",bucket:"A. Crédito Privado XIV",tipo:"FCI ARS",moneda:"ARS",benchmark:"ARS money market"},
+  "SPY":     {nombre:"SPY CEDEAR",bucket:"SPY",tipo:"CEDEAR",moneda:"ARS",benchmark:"SPY/CEDEAR"},
+  "GOOGL":   {nombre:"GOOGL CEDEAR",bucket:"GOOGL",tipo:"CEDEAR",moneda:"ARS",benchmark:"SPY/CEDEAR"},
+  "WMT":     {nombre:"WMT CEDEAR",bucket:"WMT",tipo:"CEDEAR",moneda:"ARS",benchmark:"SPY/CEDEAR"},
+  "KO":      {nombre:"KO CEDEAR",bucket:"KO",tipo:"CEDEAR",moneda:"ARS",benchmark:"SPY/CEDEAR"},
+  "MGCTO":   {nombre:"MGCTO - ON Pampa",bucket:"Pampa ON",tipo:"ON USD",moneda:"USD",benchmark:"USD conservador"},
+};
+
+// Detectar tipo de archivo por nombre
+function detectFileType(fname){
+  const f = fname.toLowerCase();
+  if(f.startsWith("resumendecuenta"))      return "tenencia";
+  if(f.startsWith("resumenfci"))           return "fci";
+  if(f.startsWith("resumenestadodecuenta"))return "movimientos";
+  if(f.startsWith("gastos") && f.endsWith(".xlsx")) return "objetivos";
+  if(f.startsWith("financial_performance"))return "mp";
+  return "otro";
+}
+
+function registrarImport(){
+  const files = [...document.getElementById("fileInput").files];
+  if(!files.length){ alert("Seleccioná al menos un archivo."); return; }
+
+  const today = new Date().toISOString().slice(0,10);
+  let sumInst = 0, sumCreados = 0, sumBuckets = 0, sumOk = [];
+  let detalles = [];
+
+  files.forEach(f => {
+    const tipo = detectFileType(f.name);
+    let status = "Registrado";
+
+    if(tipo === "tenencia" || tipo === "fci" || tipo === "mp"){
+      // Para cada ticker conocido: buscar o crear instrumento y bucket
+      Object.entries(TICKER_MAP).forEach(([ticker, info]) => {
+        // Verificar si aplica según tipo de archivo
+        const esFCI  = info.tipo.startsWith("FCI");
+        const esCEDE = info.tipo === "CEDEAR";
+        const isON   = info.tipo === "ON USD";
+
+        const aplica = tipo==="fci"    && esFCI
+                    || tipo==="tenencia"
+                    || tipo==="mp"     && info.moneda==="USD";
+        if(!aplica) return;
+
+        // Bucket: crear si no existe
+        if(!S.buckets.find(b=>b.nombre===info.bucket)){
+          S.buckets.push({id:uid(),nombre:info.bucket,grupo:"Inversión Balanz",moneda:info.moneda,objetivo:"",saldoInicial:0,notas:"Auto-creado al importar"});
+          sumBuckets++;
+        }
+        // Instrumento: crear si no existe
+        const existe = S.instrumentos.find(i=>i.nombre===info.nombre||i.bucket===info.bucket);
+        if(!existe){
+          S.instrumentos.push({id:uid(),nombre:info.nombre,bucket:info.bucket,tipo:info.tipo,moneda:info.moneda,fecha:today,inicial:0,actual:0,benchmark:info.benchmark});
+          sumCreados++;
+          detalles.push(`🆕 Creado: ${ticker}`);
+        } else {
+          sumInst++;
+          sumOk.push(ticker);
+        }
+      });
+      status = "Instrumentos verificados";
+    }
+
+    if(tipo === "movimientos"){
+      status = "Movimientos pendientes revisión manual";
+      detalles.push(`📋 ${f.name}: verificar movimientos en pestaña Movimientos`);
+    }
+
+    if(tipo === "objetivos"){
+      status = "Objetivos pendientes revisión manual";
+      detalles.push(`🎯 ${f.name}: comparar proyección con pestaña Objetivos`);
+    }
+
+    S.uploads.push({fecha:today, archivo:f.name, status});
+  });
+
+  // Mostrar resumen
+  const el = document.getElementById("importSummary");
+  if(el){
+    let html = `<div class="notice" style="${sumCreados||sumInst?'background:#f0fdf4;border-color:#bbf7d0;color:#166534':''}">`;
+    html += `<b>${sumCreados||sumInst ? '✅ Importación completada' : 'ℹ️ Archivos registrados'}</b><br>`;
+    if(sumInst)    html += `&nbsp;• ${sumInst} instrumento(s) ya registrado(s): ${sumOk.join(", ")}<br>`;
+    if(sumCreados) html += `&nbsp;• ${sumCreados} instrumento(s) nuevo(s) creado(s)<br>`;
+    if(sumBuckets) html += `&nbsp;• ${sumBuckets} bucket(s) auto-creado(s)<br>`;
+    if(detalles.length) html += `<div style="margin-top:6px;font-size:10.5px">${detalles.map(d=>`${d}<br>`).join("")}</div>`;
+    html += `<div style="margin-top:6px;font-size:10px;color:var(--muted)">⚠ Los valores actuales de cada instrumento deben actualizarse manualmente en la pestaña Instrumentos.</div>`;
+    html += `</div>`;
+    el.innerHTML = html;
+    el.style.display = "block";
+  }
+
+  fillSelects(); renderUploads(); autoSave(); recalc();
+}
+function renderUploads(){ document.querySelector("#tablaUploads tbody").innerHTML=S.uploads.slice().reverse().map(u=>`<tr><td>${u.fecha}</td><td class="left">${u.archivo}</td><td><span class="pill greyp">${u.status}</span></td></tr>`).join(""); }
+
+// ─── CHARTS ────────────────────────────────────────────────────────────────
+const _charts={};
+function destroyChart(id){ if(_charts[id]){_charts[id].destroy();delete _charts[id];} }
+
+function drawChartEvol(){
+  destroyChart("chartEvol");
+  const c=document.getElementById("chartEvol"); if(!c) return;
+  const label=evolCurrency==="ARS"?"ARS":"USD eq.";
+  const fmt=evolCurrency==="ARS"?(v=>"$"+Math.round(v/1000)+"k"):(v=>"u$s"+Math.round(v));
+  if(evolView==="total"){
+    const vals=MONTHS.map(m=>portfolioAtMonth(m,evolCurrency));
+    _charts["chartEvol"]=new Chart(c,{type:"line",data:{labels:MONTHS.map(fMonth),datasets:[{label,data:vals,fill:true,backgroundColor:evolCurrency==="ARS"?"rgba(52,199,123,.1)":"rgba(91,141,238,.1)",borderColor:evolCurrency==="ARS"?"#34c77b":"#5b8dee",tension:.35,pointRadius:3,pointHoverRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:fmt},grid:{color:"#f1f5f9"}}}}});
+  } else {
+    const datasets=S.buckets.map((b,i)=>({
+      label:b.nombre,data:MONTHS.map(m=>Math.max(0,bucketAtMonth(b.nombre,m,evolCurrency))),
+      fill:true,backgroundColor:PALETTE[i%PALETTE.length]+"28",borderColor:PALETTE[i%PALETTE.length],
+      tension:.3,pointRadius:0,stack:"total",
+    }));
+    _charts["chartEvol"]=new Chart(c,{type:"line",data:{labels:MONTHS.map(fMonth),datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{font:{size:9},boxWidth:10}}},scales:{y:{stacked:true,ticks:{callback:fmt},grid:{color:"#f1f5f9"}}}}});
+  }
+}
+
+// ─── CATEGORÍAS DE INSTRUMENTOS ────────────────────────────────────────────
+// Mapeo tipo → categoría (igual que el resumen de Balanz)
+function getCategoria(tipo){
+  if(tipo === "CEDEAR" || tipo === "Acciones") return "CEDEARs";
+  if(tipo === "ON USD")                        return "Corporativos";
+  if(tipo.startsWith("FCI"))                   return "Fondos";
+  if(tipo === "Crypto")                        return "Crypto";
+  if(tipo === "Plazo fijo")                    return "Plazo fijo";
+  return "Otros";
+}
+
+// Paleta de colores por categoría + variantes para sub-anillo
+const CAT_META = {
+  "CEDEARs":    { color:"#818cf8", shades:["#818cf8","#a78bfa","#c4b5fd","#ddd6fe","#ede9fe"] },
+  "Corporativos":{ color:"#fbbf24", shades:["#fbbf24","#fcd34d","#fde68a"] },
+  "Fondos":     { color:"#34c77b", shades:["#34c77b","#4ade80","#86efac","#bbf7d0"] },
+  "Ahorro":     { color:"#5b8dee", shades:["#5b8dee","#93c5fd","#bfdbfe","#dbeafe","#eff6ff"] },
+  "Crypto":     { color:"#f87171", shades:["#f87171","#fca5a5"] },
+  "Plazo fijo": { color:"#fb923c", shades:["#fb923c","#fdba74"] },
+  "Otros":      { color:"#94a3b8", shades:["#94a3b8","#cbd5e1"] },
+};
+
+let _catMoneda = "USD";
+
+function setCatMoneda(m){
+  _catMoneda = m;
+  document.getElementById("btnCatUsd").classList.toggle("on", m==="USD");
+  document.getElementById("btnCatArs").classList.toggle("on", m==="ARS");
+  drawChartCategoria();
+}
+
+// Valor de un instrumento en la moneda seleccionada
+function instValCat(i){
+  const usd = instUsd(i);
+  return _catMoneda === "USD" ? usd : usd * P().mep;
+}
+function bucketValCat(bNombre){
+  const usd = bucketUsd(bNombre);
+  return _catMoneda === "USD" ? usd : usd * P().mep;
+}
+
+function drawChartCategoria(){
+  destroyChart("chartCategoria");
+  const cc = document.getElementById("chartCategoria");
+  if(!cc) return;
+
+  const sym = _catMoneda === "USD" ? "u$s" : "$";
+
+  // ── Agrupar instrumentos por categoría ──────────────────────────────────
+  const catMap = {}; // { "CEDEARs": [{label, val}, ...], ... }
+
+  S.instrumentos.forEach(i => {
+    const cat = getCategoria(i.tipo);
+    if(!catMap[cat]) catMap[cat] = [];
+    catMap[cat].push({ label: i.nombre.split(" ")[0], fullLabel: i.nombre, val: Math.max(0, instValCat(i)) });
+  });
+
+  // Ahorro previo (buckets sin instrumento registrado)
+  const ahorroItems = [];
+  S.buckets.filter(b => b.grupo === "Ahorro previo").forEach(b => {
+    const val = Math.max(0, bucketValCat(b.nombre));
+    if(val > 0) ahorroItems.push({ label: b.nombre, fullLabel: b.nombre, val });
+  });
+  if(ahorroItems.length) catMap["Ahorro"] = ahorroItems;
+
+  const catKeys = Object.keys(catMap);
+  const total   = catKeys.reduce((s,k)=>s+catMap[k].reduce((a,x)=>a+x.val,0),0);
+  if(!total){ cc.style.display="none"; return; }
+  cc.style.display="";
+
+  // ── Anillo interno: categorías ──────────────────────────────────────────
+  const innerLabels = catKeys;
+  const innerVals   = catKeys.map(k => catMap[k].reduce((a,x)=>a+x.val,0));
+  const innerColors = catKeys.map(k => (CAT_META[k]||CAT_META["Otros"]).color);
+
+  // ── Anillo externo: instrumentos individuales ───────────────────────────
+  const outerLabels=[], outerVals=[], outerColors=[];
+  catKeys.forEach(k => {
+    const shades = (CAT_META[k]||CAT_META["Otros"]).shades;
+    catMap[k].forEach((item, idx) => {
+      outerLabels.push(item.label);
+      outerVals.push(item.val);
+      outerColors.push(shades[idx % shades.length]);
+    });
+  });
+
+  // Mapa outer-index → categoría (para el tooltip del anillo externo)
+  const outerCatOf = [];
+  catKeys.forEach(k => catMap[k].forEach(() => outerCatOf.push(k)));
+
+  // ── Construir chart ─────────────────────────────────────────────────────
+  // IMPORTANTE: data.labels solo se usa para el anillo INTERNO (categorías).
+  // El anillo externo resuelve sus labels desde outerLabels + outerCatOf
+  // via el tooltip callback, evitando el bug de indexado compartido de Chart.js.
+  _charts["chartCategoria"] = new Chart(cc, {
+    type: "doughnut",
+    data: {
+      labels: catKeys,          // ← etiquetas del anillo interno
+      datasets: [
+        {
+          label: "__inner__",   // flag para el callback
+          data: innerVals,
+          backgroundColor: innerColors,
+          borderWidth: 3,
+          borderColor: "#fff",
+          hoverOffset: 4,
+          weight: 0.55,
+        },
+        {
+          label: "__outer__",   // flag para el callback
+          data: outerVals,
+          backgroundColor: outerColors,
+          borderWidth: 2,
+          borderColor: "#fff",
+          hoverOffset: 6,
+          weight: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "42%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            // Título: nombre correcto según qué anillo se hovered
+            title: ctx => {
+              const c = ctx[0];
+              if(c.dataset.label === "__inner__") return catKeys[c.dataIndex] || "";
+              return outerLabels[c.dataIndex] || "";
+            },
+            // Subtítulo (segunda línea): para el externo mostramos a qué categoría pertenece
+            beforeLabel: ctx => {
+              if(ctx.dataset.label === "__outer__"){
+                return `Categoría: ${outerCatOf[ctx.dataIndex] || ""}`;
+              }
+              return null;
+            },
+            label: ctx => {
+              const v = ctx.parsed;
+              const pct = total > 0 ? (v/total*100).toFixed(1) : 0;
+              return ` ${sym} ${Math.round(v).toLocaleString("es-AR")}  (${pct}% del total)`;
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // ── Tabla de detalle ────────────────────────────────────────────────────
+  const td = document.getElementById("tablaCatDetalle");
+  if(!td) return;
+
+  let html = `<div style="display:flex;flex-direction:column;gap:12px">`;
+  catKeys.forEach(k => {
+    const items   = catMap[k];
+    const catTotal= items.reduce((a,x)=>a+x.val,0);
+    const catPct  = (catTotal/total*100).toFixed(1);
+    const catColor= (CAT_META[k]||CAT_META["Otros"]).color;
+    const shades  = (CAT_META[k]||CAT_META["Otros"]).shades;
+
+    html += `<div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+      <!-- Cabecera categoría -->
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-bottom:1px solid var(--line)">
+        <span style="width:10px;height:10px;border-radius:50%;background:${catColor};flex-shrink:0"></span>
+        <span style="font-weight:800;font-size:12px;flex:1">${k}</span>
+        <span style="font-weight:800;font-size:12px">${sym} ${Math.round(catTotal).toLocaleString("es-AR")}</span>
+        <span class="pill greyp" style="font-size:9.5px">${catPct}%</span>
+      </div>
+      <!-- Barra de progreso de la categoría -->
+      <div style="height:3px;background:var(--line)">
+        <div style="height:100%;width:${catPct}%;background:${catColor}"></div>
+      </div>
+      <!-- Instrumentos individuales -->
+      <div style="padding:6px 0">`;
+
+    items.forEach((item, idx) => {
+      const iPct = catTotal > 0 ? (item.val/catTotal*100).toFixed(1) : 0;
+      const iColor = shades[idx % shades.length];
+      html += `
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 12px;font-size:11px">
+          <span style="width:7px;height:7px;border-radius:50%;background:${iColor};flex-shrink:0"></span>
+          <span style="flex:1;color:var(--text)">${item.fullLabel}</span>
+          <span style="color:var(--muted);font-size:10px;min-width:36px;text-align:right">${iPct}%</span>
+          <span style="font-weight:600;min-width:90px;text-align:right">${sym} ${Math.round(item.val).toLocaleString("es-AR")}</span>
+        </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  // Total general
+  html += `<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--dark);border-radius:8px;color:#fff;font-weight:800;font-size:12px">
+    <span>TOTAL</span>
+    <span>${sym} ${Math.round(total).toLocaleString("es-AR")}</span>
+  </div>`;
+  html += `</div>`;
+  td.innerHTML = html;
+}
+
+// ─── CHART TOGGLE CONTROLLERS ──────────────────────────────────────────────
+function setGrafMoneda(m){
+  _grafMoneda=m;
+  document.getElementById("btnGrafUsd").classList.toggle("on",m==="USD");
+  document.getElementById("btnGrafArs").classList.toggle("on",m==="ARS");
+  drawChartBuckets();
+}
+function setObjMode(mode){
+  _objMode=mode;
+  document.getElementById("btnObjAbs").classList.toggle("on",mode==="abs");
+  document.getElementById("btnObjPct").classList.toggle("on",mode==="pct");
+  drawChartObjetivos();
+}
+
+// Liquidez por instrumento (derivada de tipo/nombre de bucket)
+function getLiquidez(bucketNombre){
+  const b = S.buckets.find(x=>x.nombre===bucketNombre);
+  if(!b) return "1-mes";
+  const n = bucketNombre.toLowerCase();
+  if(n.includes("efectivo")) return "0-24h";
+  if(n.includes("santander")) return "0-24h";
+  if(n.includes("mp")) return "1-semana";
+  if(n.includes("depósito") || n.includes("deposito")) return "3-anos";
+  if(n.includes("caja")) return "1-mes";
+  const i = S.instrumentos.find(x=>x.bucket===bucketNombre);
+  if(!i) return "1-mes";
+  if(i.tipo==="FCI ARS"||i.tipo==="FCI USD") return "1-semana";
+  if(i.tipo==="CEDEAR"||i.tipo==="Acciones") return "1-semana";
+  if(i.tipo==="ON USD") return "1-ano";
+  if(i.tipo==="Plazo fijo") return "1-mes";
+  return "1-mes";
+}
+const LIQ_BUCKETS = ["0-24h","1-semana","1-mes","6-meses","1-ano","3-anos"];
+const LIQ_LABELS  = {"0-24h":"0–24h","1-semana":"1 semana","1-mes":"1 mes","6-meses":"6 meses","1-ano":"1 año","3-anos":"3 años"};
+const LIQ_COLORS  = {"0-24h":"#34c77b","1-semana":"#5b8dee","1-mes":"#fbbf24","6-meses":"#fb923c","1-ano":"#f87171","3-anos":"#a78bfa"};
+
+function drawChartBuckets(){
+  destroyChart("chartBuckets");
+  const bc=document.getElementById("chartBuckets"); if(!bc) return;
+  const mep=P().mep;
+  const labels=S.buckets.map(b=>b.nombre);
+  const vals=S.buckets.map(b=>{
+    const s=Math.max(0,bucketSaldo(b.nombre));
+    if(_grafMoneda==="USD") return b.moneda==="USD"?s:s/mep;
+    else return b.moneda==="ARS"?s:s*mep;
+  });
+  const symbol=_grafMoneda==="USD"?"u$s":"$";
+  _charts["chartBuckets"]=new Chart(bc,{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:PALETTE,borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:"right",labels:{font:{size:9.5},boxWidth:10,padding:5}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${symbol}${Math.round(ctx.parsed).toLocaleString("es-AR")}`}}
+      }}});
+}
+
+// Popup de liquidez
+function showLiqPopup(evt, bucketKey, items){
+  const popup = document.getElementById("liqPopup");
+  const total = items.reduce((a,b)=>a+Math.max(0,bucketUsd(b.nombre)),0);
+  document.getElementById("liqPopupTitle").textContent =
+    `${LIQ_LABELS[bucketKey]} — u$s ${Math.round(total).toLocaleString("es-AR")}`;
+
+  let html = `<div style="display:flex;flex-direction:column;gap:5px">`;
+  if(!items.length){
+    html += `<span style="color:var(--muted);font-size:11px">Sin activos en este plazo</span>`;
+  } else {
+    items.forEach(b=>{
+      const v = Math.max(0, bucketUsd(b.nombre));
+      const pct = total > 0 ? (v/total*100).toFixed(0) : 0;
+      const color = LIQ_COLORS[bucketKey];
+      html += `<div style="display:flex;align-items:center;gap:8px;font-size:11px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>
+        <span style="flex:1">${b.nombre}</span>
+        <span style="color:var(--muted);font-size:10px">${pct}%</span>
+        <span style="font-weight:700;min-width:70px;text-align:right">u$s ${Math.round(v).toLocaleString("es-AR")}</span>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+  document.getElementById("liqPopupBody").innerHTML = html;
+
+  // Posicionar cerca del evento
+  const x = Math.min(evt.clientX + 12, window.innerWidth - 340);
+  const y = Math.min(evt.clientY + 12, window.innerHeight - 200);
+  popup.style.left = x + "px";
+  popup.style.top  = y + "px";
+  popup.style.display = "block";
+}
+
+// Cerrar popup al hacer click fuera
+document.addEventListener("click", e => {
+  const p = document.getElementById("liqPopup");
+  if(p && !p.contains(e.target)) p.style.display = "none";
+});
+
+function drawChartLiquidez(){
+  destroyChart("chartLiquidez");
+  const lc=document.getElementById("chartLiquidez"); if(!lc) return;
+
+  // Agrupar buckets por liquidez
+  const byL={};
+  LIQ_BUCKETS.forEach(k=>{ byL[k]={val:0,items:[]}; });
+  S.buckets.forEach(b=>{
+    const liq=getLiquidez(b.nombre);
+    const v=Math.max(0,bucketUsd(b.nombre));
+    byL[liq].val+=v;
+    byL[liq].items.push(b);
+  });
+
+  // Un dataset por bucket, cada uno es un segmento de la barra apilada
+  // (cada barra tiene 1 solo activo visible, pero la clase de color es del plazo)
+  // Alternativa más clara: un dataset por bucket (segmento de color único por plazo)
+  const datasets = LIQ_BUCKETS.map(k=>({
+    label: LIQ_LABELS[k],
+    data: LIQ_BUCKETS.map(k2 => k2===k ? byL[k].val : 0),
+    backgroundColor: LIQ_COLORS[k]+"bb",
+    hoverBackgroundColor: LIQ_COLORS[k],
+    borderRadius: 4,
+    borderWidth: 0,
+    stack: "liq",
+    order: 2,
+  }));
+
+  // Línea acumulada
+  let cum = 0;
+  const cumData = LIQ_BUCKETS.map(k => { cum += byL[k].val; return cum; });
+  datasets.push({
+    label: "Capital acumulado rescatable",
+    data: cumData,
+    type: "line",
+    borderColor: "#334155",
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    pointRadius: 4,
+    pointBackgroundColor: "#334155",
+    tension: 0.35,
+    order: 1,
+    yAxisID: "y",
+  });
+
+  _charts["chartLiquidez"] = new Chart(lc,{
+    type:"bar",
+    data:{ labels: LIQ_BUCKETS.map(k=>LIQ_LABELS[k]), datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{
+          position:"bottom",
+          labels:{font:{size:9.5},boxWidth:10,padding:8,
+            filter: item => item.text !== "Capital acumulado rescatable"
+          }
+        },
+        tooltip:{
+          callbacks:{
+            title: ctx => ctx[0].label,
+            label: ctx => {
+              if(ctx.dataset.type==="line")
+                return ` Acumulado: u$s ${Math.round(ctx.parsed.y).toLocaleString("es-AR")}`;
+              if(ctx.parsed.y===0) return null;
+              return ` ${ctx.dataset.label}: u$s ${Math.round(ctx.parsed.y).toLocaleString("es-AR")}`;
+            },
+          },
+          filter: item => item.parsed.y > 0,
+        },
+      },
+      onClick:(evt, elements)=>{
+        if(!elements.length) return;
+        const idx = elements[0].index;
+        const key = LIQ_BUCKETS[idx];
+        if(byL[key].items.length) showLiqPopup(evt.native||evt, key, byL[key].items);
+      },
+      scales:{
+        y:{
+          stacked:true,
+          ticks:{callback:v=>"u$s"+Math.round(v/1000)+"k"},
+          grid:{color:"#f1f5f9"},
+        },
+        x:{stacked:true,grid:{display:false}},
+      },
+    },
+  });
+}
+
+function setIngresosMoneda(m){
+  _ingresosMoneda = m;
+  document.getElementById("btnIngUsd")?.classList.toggle("on", m==="USD");
+  document.getElementById("btnIngArs")?.classList.toggle("on", m==="ARS");
+  drawChartIngresos();
+}
+
+function drawChartIngresos(){
+  destroyChart("chartIngresos");
+  const ic=document.getElementById("chartIngresos"); if(!ic) return;
+  const tipos=["Rendimiento","Cupón","Dividendo"];
+  const colors={"Rendimiento":"#34c77b","Cupón":"#5b8dee","Dividendo":"#fbbf24"};
+  const sym = _ingresosMoneda === "USD" ? "u$s" : "$";
+
+  const datasets = tipos.map(t=>({
+    label: t,
+    data: MONTHS.map(m => {
+      const tc = getMep(m);
+      return S.movimientos
+        .filter(x => x.tipo===t && mOf(x.fecha)===m)
+        .reduce((a,x) => {
+          // Primero pasar todo a USD usando el TC del mes
+          const usd = Math.abs(x.moneda==="USD" ? +x.monto : +x.monto / tc);
+          // Luego convertir a la moneda elegida
+          return a + (_ingresosMoneda==="USD" ? usd : usd * tc);
+        }, 0);
+    }),
+    backgroundColor: colors[t]+"aa",
+    borderColor: colors[t],
+    borderWidth:1, borderRadius:3, stack:"s",
+  }));
+
+  _charts["chartIngresos"] = new Chart(ic,{
+    type:"bar",
+    data:{labels:MONTHS.map(fMonth),datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:"top",labels:{font:{size:9.5},boxWidth:10}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${sym} ${Math.round(ctx.parsed.y).toLocaleString("es-AR")}`}},
+      },
+      scales:{
+        y:{stacked:true,ticks:{callback:v=>`${sym}${Math.round(v)}`},grid:{color:"#f1f5f9"}},
+        x:{stacked:true,grid:{display:false}},
+      },
+    },
+  });
+}
+
+// ─── RUEDITAS OBJETIVOS (SVG circles) ──────────────────────────────────────
+function renderObjetivosCircles(){
+  const el = document.getElementById("objCircles");
+  if(!el) return;
+
+  const activos = S.objetivos.filter(o=>o.status==="Activo");
+  if(!activos.length){
+    el.innerHTML = `<p style="color:var(--muted);font-size:11px">Sin objetivos activos.</p>`;
+    return;
+  }
+
+  el.innerHTML = activos.map(o => {
+    const act  = objActual(o);
+    const pct  = Math.min(100, o.target > 0 ? act / o.target * 100 : 0);
+    const over = pct >= 100;
+    const color = over ? "#34c77b" : pct >= 75 ? "#5b8dee" : pct >= 40 ? "#fbbf24" : "#f87171";
+
+    // SVG circle parameters
+    const R   = 40;                           // radio
+    const C   = 2 * Math.PI * R;             // circunferencia completa
+    const fill = (pct / 100) * C;
+    const gap  = C - fill;
+    const fmtAct  = o.moneda==="USD" ? fUSD(act)         : fARS(act);
+    const fmtTgt  = o.moneda==="USD" ? fUSD(o.target)    : fARS(o.target);
+    const fmtFalt = o.moneda==="USD" ? fUSD(Math.max(0,o.target-act)) : fARS(Math.max(0,o.target-act));
+
+    // Meses restantes
+    const hoy = new Date(P().fechaRef||new Date().toISOString().slice(0,10));
+    const fechaObj = o.fecha ? new Date(o.fecha+"-01") : null;
+    const mesesR   = fechaObj ? Math.max(0,Math.round((fechaObj-hoy)/(1000*60*60*24*30.4375))) : null;
+
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:130px;max-width:150px;padding:8px;border:1px solid var(--line);border-radius:12px;background:white">
+      <!-- SVG circle -->
+      <div style="position:relative;width:100px;height:100px">
+        <svg viewBox="0 0 100 100" style="width:100%;height:100%;transform:rotate(-90deg)">
+          <!-- Fondo gris -->
+          <circle cx="50" cy="50" r="${R}" fill="none" stroke="#e2e8f0" stroke-width="9"/>
+          <!-- Progreso -->
+          <circle cx="50" cy="50" r="${R}" fill="none"
+            stroke="${color}" stroke-width="9"
+            stroke-dasharray="${fill.toFixed(2)} ${gap.toFixed(2)}"
+            stroke-linecap="round"/>
+        </svg>
+        <!-- Texto centrado -->
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
+          <span style="font-size:20px;font-weight:900;color:${color};line-height:1">${pct.toFixed(0)}%</span>
+          ${over ? '<span style="font-size:9px;color:#16a34a;font-weight:700">✓ Cubierto</span>' : ''}
+        </div>
+      </div>
+      <!-- Nombre -->
+      <div style="font-size:10.5px;font-weight:800;text-align:center;color:var(--dark);line-height:1.3">${o.nombre}</div>
+      <!-- Valores -->
+      <div style="font-size:9.5px;color:var(--muted);text-align:center;line-height:1.5">
+        <div><span style="color:${color};font-weight:700">${fmtAct}</span></div>
+        <div>de ${fmtTgt}</div>
+        ${!over ? `<div style="color:#dc2626">faltan ${fmtFalt}</div>` : ''}
+        ${mesesR!==null ? `<div>${mesesR} meses restantes</div>` : ''}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function drawCharts(){
+  drawChartCategoria();
+  drawChartEvol();
+  drawChartLiquidez();
+  drawChartIngresos();
+  drawChartObjetivos();
+}
+
+// ─── BENCHMARKS FUENTES ────────────────────────────────────────────────────
+function syncBenchRefs(){
+  const p = P();
+  const upd = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  upd("benchUsdRef",  `${(p.benchUsd*100).toFixed(1)}% anual (configurado en Dashboard)`);
+  upd("benchArsRef",  `${(p.benchArs*100).toFixed(1)}% mensual (configurado en Dashboard)`);
+  upd("benchCedearRef",`${(p.benchCedear*100).toFixed(1)}% anual (configurado en Dashboard)`);
+  upd("mepRef",       `$ ${fNum(p.mep,2)} (último valor cargado)`);
+}
+
+async function actualizarBenchmarks(){
+  const btn = document.getElementById("btnActBench");
+  const msg = document.getElementById("benchUpdateMsg");
+  if(btn) btn.textContent = "🔄 Actualizando…";
+  try{
+    const r = await fetch("https://dolarapi.com/v1/dolares/bolsa");
+    const d = await r.json();
+    if(d.venta){
+      document.getElementById("mep").value = d.venta;
+      S.params.mep = d.venta;
+      debounceRecalc();
+      syncBenchRefs();
+      if(msg){ msg.style.display="block"; msg.style.color="#166534"; msg.textContent=`✅ MEP actualizado: $ ${d.venta} (${new Date().toLocaleTimeString("es-AR")})`; }
+    }
+  } catch(e){
+    if(msg){ msg.style.display="block"; msg.style.color="#991b1b"; msg.textContent="❌ API no disponible. Actualizá el MEP manualmente en Dashboard."; }
+  }
+  if(btn) btn.textContent = "🔄 Actualizar MEP via API";
+}
+
+// ─── RECOMENDACIONES ───────────────────────────────────────────────────────
+function renderRecomendaciones(){
+  const efectivoUsd = +document.getElementById("recoEfectivo")?.value    || 0;
+  const efectivoArs = +document.getElementById("recoEfectivoArs")?.value || 0;
+  const aportesUsd  = +document.getElementById("recoAportes")?.value     || 0;
+  const aportesArs  = +document.getElementById("recoAportesArs")?.value  || 0;
+  const mep = P().mep;
+
+  // Convertir todo a USD para análisis
+  const efectivo = efectivoUsd + efectivoArs / mep;
+  const aportes  = aportesUsd  + aportesArs  / mep;
+  const hoy      = new Date(P().fechaRef || new Date().toISOString().slice(0,10));
+
+  // ── Gap analysis por objetivo ────────────────────────────────────────────
+  let tbody = "";
+  S.objetivos.filter(o=>o.status==="Activo").forEach(o => {
+    const act     = objActual(o);
+    const faltante = Math.max(0, o.target - act);
+    const fechaObj = o.fecha ? new Date(o.fecha+"-01") : null;
+    const mesesR   = fechaObj ? Math.max(0, Math.round((fechaObj - hoy)/(1000*60*60*24*30.4375))) : null;
+    const aporteMes= mesesR && mesesR > 0 ? faltante / mesesR : null;
+    const urgencia = mesesR !== null && mesesR < 6 ? "badp" : mesesR < 12 ? "warnp" : "ok";
+    const fmtFalt  = o.moneda==="USD" ? fUSD(faltante) : fARS(faltante);
+    const fmtAporte= aporteMes !== null
+      ? (o.moneda==="USD" ? fUSD(aporteMes) : fARS(aporteMes))
+      : "—";
+
+    tbody += `<tr>
+      <td class="left"><b>${o.nombre}</b></td>
+      <td><span class="pill ${o.moneda==="USD"?"usdp":"arsp"}">${o.moneda}</span></td>
+      <td class="num">${o.moneda==="USD"?fUSD(o.target):fARS(o.target)}</td>
+      <td class="num">${o.moneda==="USD"?fUSD(act):fARS(act)}</td>
+      <td class="num ${faltante>0?'bad':'good'}">${fmtFalt}</td>
+      <td>${o.fecha||"—"}</td>
+      <td class="num"><span class="pill ${urgencia}">${mesesR!==null?mesesR+" m":"?"}</span></td>
+      <td class="num">${fmtAporte}</td>
+      <td>${faltante<=0?'<span class="pill ok">✓ Cubierto</span>':mesesR<3?'<span class="pill badp">🚨 Urgente</span>':mesesR<12?'<span class="pill warnp">⚡ En curso</span>':'<span class="pill infop">📅 Planificado</span>'}</td>
+    </tr>`;
+  });
+  document.getElementById("recoObjetivosBody").innerHTML = tbody || `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:16px">Sin objetivos activos</td></tr>`;
+
+  // ── Sugerencia de asignación ─────────────────────────────────────────────
+  const efectivoUsd2 = +document.getElementById("recoEfectivo")?.value    || 0;
+  const efectivoArs2 = +document.getElementById("recoEfectivoArs")?.value || 0;
+  const aportesUsd2  = +document.getElementById("recoAportes")?.value     || 0;
+  const aportesArs2  = +document.getElementById("recoAportesArs")?.value  || 0;
+  const mep2 = P().mep;
+  const totalDisp = efectivo + aportes;
+
+  if(totalDisp <= 0){
+    document.getElementById("recoSugerencia").innerHTML = `<p style="color:var(--muted);font-size:11px">Ingresá el efectivo disponible o un aporte mensual para ver la sugerencia.</p>`;
+    return;
+  }
+
+  // Composición de fondos disponibles
+  const totalUsd = efectivoUsd2 + aportesUsd2;
+  const totalArs = efectivoArs2 + aportesArs2;
+  const compHtml = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 12px;font-size:11px">
+      <div style="font-weight:700;color:#1e40af">💵 En dólares</div>
+      <div style="font-size:13px;font-weight:800">u$s ${totalUsd.toLocaleString("es-AR")}</div>
+      <div style="font-size:9.5px;color:var(--muted)">Ideal: FCI USD, ON, CEDEARs</div>
+    </div>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;font-size:11px">
+      <div style="font-weight:700;color:#166534">🪙 En pesos</div>
+      <div style="font-size:13px;font-weight:800">$ ${totalArs.toLocaleString("es-AR")}</div>
+      <div style="font-size:9.5px;color:var(--muted)">Ideal: FCI ARS (BCAHA, CPRIVADOA)</div>
+    </div>
+    <div style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:11px">
+      <div style="font-weight:700;color:var(--muted)">Total en USD eq.</div>
+      <div style="font-size:13px;font-weight:800">u$s ${Math.round(totalDisp).toLocaleString("es-AR")}</div>
+      <div style="font-size:9.5px;color:var(--muted)">Al MEP $ ${fNum(mep2,0)}</div>
+    </div>
+  </div>`;
+
+  // Calcular prioridades de objetivos por urgencia
+  const objActivos = S.objetivos.filter(o=>o.status==="Activo" && objActual(o) < o.target);
+  const objCortos  = objActivos.filter(o=>{ const m=o.fecha?Math.round((new Date(o.fecha+"-01")-hoy)/(1000*60*60*24*30.4375)):999; return m<6; });
+  const objMediano = objActivos.filter(o=>{ const m=o.fecha?Math.round((new Date(o.fecha+"-01")-hoy)/(1000*60*60*24*30.4375)):999; return m>=6&&m<24; });
+  const objLargo   = objActivos.filter(o=>{ const m=o.fecha?Math.round((new Date(o.fecha+"-01")-hoy)/(1000*60*60*24*30.4375)):999; return m>=24; });
+
+  // Reglas de asignación según horizonte
+  let allocRules;
+  if(objCortos.length){
+    allocRules = [
+      {label:"FCI MM / Líquido (ESTRA1A, BCAHA)",    pct:60, color:"#5b8dee", tip:"Rescate T+1 a T+3. Ideal para plazos < 6 meses."},
+      {label:"Cash / Efectivo",                        pct:30, color:"#34c77b", tip:"Disponibilidad inmediata."},
+      {label:"ON USD (MGCTO) — solo si queda remanente",pct:10, color:"#fbbf24", tip:"Rendimiento con algo más de plazo."},
+    ];
+  } else if(objMediano.length){
+    allocRules = [
+      {label:"FCI USD / ARS (ESTRA1A, BCAHA, CPRIVADOA)",pct:35, color:"#5b8dee", tip:"Liquidez en días. Buena relación riesgo/retorno a 6–24 meses."},
+      {label:"ON USD (MGCTO)",                            pct:30, color:"#fbbf24", tip:"Renta fija en dólares. Rescatable en mercado secundario."},
+      {label:"CEDEARs diversificados (SPY, GOOGL, WMT, KO)",pct:25, color:"#a78bfa", tip:"Cobertura USD + crecimiento. Horizonte 12m+."},
+      {label:"Cash de reserva",                           pct:10, color:"#34c77b", tip:"Colchón para oportunidades y emergencias."},
+    ];
+  } else {
+    allocRules = [
+      {label:"CEDEARs diversificados (SPY, GOOGL, WMT, KO)",pct:40, color:"#a78bfa", tip:"Mayor potencial de crecimiento a largo plazo."},
+      {label:"ON USD (MGCTO)",                              pct:30, color:"#fbbf24", tip:"Renta en dólares con vencimiento definido."},
+      {label:"FCI USD (ESTRA1A)",                           pct:20, color:"#5b8dee", tip:"Liquidez y rendimiento en dólares."},
+      {label:"Cash / Efectivo",                             pct:10, color:"#34c77b", tip:"Reserva estratégica."},
+    ];
+  }
+
+  let html = compHtml;
+  html += `<div class="notice" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;margin-bottom:12px">
+    Si ingresan <b>${fUSD(totalDisp)}</b> hoy (u$s eq.) — distribución sugerida según tus objetivos más urgentes:
+  </div>`;
+  html += `<div style="display:flex;flex-direction:column;gap:8px">`;
+  allocRules.forEach(r => {
+    const monto = totalDisp * r.pct / 100;
+    html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--line)">
+      <div style="width:36px;height:36px;border-radius:8px;background:${r.color}22;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:${r.color}">${r.pct}%</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:11.5px">${r.label}</div>
+        <div style="font-size:10px;color:var(--muted)">${r.tip}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:800;font-size:12px">${fUSD(monto)}</div>
+        <div style="font-size:9.5px;color:var(--muted)">${fARS(monto*P().mep)}</div>
+      </div>
+      <div style="width:80px">
+        <div style="background:${r.color}22;border-radius:999px;height:6px;overflow:hidden">
+          <div style="background:${r.color};width:${r.pct}%;height:100%;border-radius:999px"></div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  html += `<div style="margin-top:10px;font-size:10px;color:var(--muted)">
+    ⚠ Sugerencia orientativa. No considera situación impositiva ni comisiones. Siempre verificar condiciones actuales del mercado.
+  </div>`;
+  document.getElementById("recoSugerencia").innerHTML = html;
+}
+
+// ─── SHOW TAB ──────────────────────────────────────────────────────────────
+function showTab(id,btn){
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");
+  if(id==="graficos"){
+    setTimeout(()=>{ drawCharts(); renderObjetivosCircles(); setTimeout(()=>Object.values(_charts).forEach(c=>c&&c.resize()),60); },120);
+  }
+  if(id==="recomendaciones") renderRecomendaciones();
+  if(id==="oportunidad") syncBenchRefs();
+}
+
+// ─── MASTER RECALC ─────────────────────────────────────────────────────────
+function recalc(){
+  renderKpis(); renderObjetivosCircles();
+  renderFlujo(); renderMovs(); renderBuckets();
+  renderInstrumentos(); renderOportunidad(); renderObjetivos();
+  renderUploads(); updateStorageInfo(); drawCharts();
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+async function init(){
+  syncParamsToDOM();
+  fillSelects();
+  renderTcInputs();
+  initFlujoSelects();
+  document.getElementById("movFecha").value=new Date().toISOString().slice(0,10);
+
+  // Intentar cargar desde la nube si está configurada
+  if(jbCredentials().ok){
+    setCloudInd("☁ Cargando…","#8897b3");
+    document.getElementById("saveInd").textContent="Sincronizando nube…";
+    const loaded = await loadFromCloud(false);
+    if(!loaded){
+      // Falló la nube → usar datos locales
+      recalc();
+    }
+    // Si cargó, loadFromCloud ya llamó recalc()
+  } else {
+    recalc();
+  }
+
+  updateCloudStatusBadge();
+  setTimeout(()=>{ drawCharts(); renderObjetivosCircles(); setTimeout(()=>Object.values(_charts).forEach(c=>c&&c.resize()),80); },200);
+  document.getElementById("saveInd").textContent="Listo";
+}
+
+// Mostrar badge cuando se abre Config
+const _origShowTab = showTab;
+function showTab(id,btn){
+  _origShowTab(id,btn);
+  if(id==="config") setTimeout(updateCloudStatusBadge, 50);
+}
+
+init();
+</script>
+</body>
+</html>
